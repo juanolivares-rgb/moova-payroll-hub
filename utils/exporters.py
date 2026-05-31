@@ -180,47 +180,60 @@ def export_mx_novedades(colabs, periodo):
     """
     Genera Excel con el MISMO formato que el sheet de OPS
     pero con los valores ya corregidos por las reglas LFT.
+    Una fila por dia, igual que el original.
     """
     wb = Workbook()
     ws = wb.active
     ws.title = 'Novedades'
 
+    # Fila 1: header general
     ws.merge_cells('A1:O1')
     ws['A1'] = f'MOOVA · Novedades para Estudio MX · {periodo}'
     ws['A1'].font = Font(name='Calibri', bold=True, size=11, color=MOOVA_BLUE)
     ws['A1'].alignment = CENTER
     ws.row_dimensions[1].height = 22
 
+    # Fila 2: headers identicos al sheet de OPS
     headers = [
-        '#', 'Colaborador', 'Tipo de Novedad', 'Fecha', 'Mes de Liquidación',
-        'Día', 'Horario', 'Prima Feriado', 'Día Descanso',
-        'HH EE doble', 'HH EE triple', 'HE dominical', 'HE Festiva',
-        'Prima Dominical', 'Comentarios'
+        '#', 'Colaborador', 'Tipo de Novedad', 'Fecha',
+        'Mes de Liquidacion', 'Dia', 'Horario', 'Prima Feriado',
+        'Dia Descanso', 'HH EE doble', 'HH EE triple',
+        'HE dominical', 'HE Festiva', 'Prima Dominical', 'Comentarios'
     ]
     for i, h in enumerate(headers, 1):
         c = ws.cell(row=2, column=i, value=h)
-        c.fill = HEADER_FILL; c.font = HEADER_FONT; c.alignment = CENTER; c.border = BORDER
+        c.fill = HEADER_FILL; c.font = HEADER_FONT
+        c.alignment = CENTER; c.border = BORDER
 
     row_num = 3
+    contador = 1
+    correcciones_log = []
+
     for nombre, d in colabs.items():
         filas = d.get('filas', [])
+        hasErr = any(a.get('tipo') == 'err' for a in d.get('alertas', []))
+
         if not filas:
-            hasCorrLFT = bool(d.get('correcciones_lft'))
-            hasErr = any(a.get('tipo') == 'err' for a in d.get('alertas', []))
-            fill = PatternFill("solid", fgColor=RED_FILL) if hasErr else (PatternFill("solid", fgColor="FFF9C4") if hasCorrLFT else None)
-            vals = [row_num-2, nombre, 'Manual', '', '', '', '', '',
-                    d.get('diasDesc') or '', d.get('heDoble') or '',
-                    d.get('heTriple') or '', d.get('heDom') or '',
-                    d.get('heFest') or '', d.get('primaDom') or '',
-                    d.get('comentarios') or '']
+            # Novedad manual sin filas detalladas
+            fill = PatternFill("solid", fgColor=RED_FILL) if hasErr else None
+            vals = [
+                contador, nombre, 'Manual', '', '', '', '', '',
+                d.get('diasDesc') or '',
+                d.get('heDoble') or '',
+                d.get('heTriple') or '',
+                d.get('heDom') or '',
+                d.get('heFest') or '',
+                d.get('primaDom') or '',
+                d.get('comentarios') or ''
+            ]
             for ci, val in enumerate(vals, 1):
                 c = ws.cell(row=row_num, column=ci, value=val)
                 c.font = DATA_FONT; c.border = BORDER
                 if fill: c.fill = fill
             row_num += 1
+            contador += 1
         else:
             for f in filas:
-                hasErr = any(a.get('tipo') == 'err' for a in d.get('alertas', []))
                 hasCorrLFT = f.get('tiene_correccion', False)
                 if hasErr:
                     fill = PatternFill("solid", fgColor=RED_FILL)
@@ -228,52 +241,91 @@ def export_mx_novedades(colabs, periodo):
                     fill = PatternFill("solid", fgColor="FFF9C4")
                 else:
                     fill = None
+
+                # Usar valores CORREGIDOS por LFT (he_doble, he_triple, etc.)
+                he_doble = f.get('he_doble', 0) or ''
+                he_triple = f.get('he_triple', 0) or ''
+                he_dom = f.get('he_dominical', 0) or ''
+                he_fest = f.get('he_festiva', 0) or ''
+                prima_dom = f.get('prima_dominical', 0) or ''
+                dias_desc = f.get('dias_descanso', 0) or ''
+                prima_fer = f.get('prima_feriado', 0) or ''
+
+                # Solo mostrar valores si son > 0
+                if isinstance(he_doble, float) and he_doble == 0: he_doble = ''
+                if isinstance(he_triple, float) and he_triple == 0: he_triple = ''
+                if isinstance(he_dom, float) and he_dom == 0: he_dom = ''
+                if isinstance(he_fest, float) and he_fest == 0: he_fest = ''
+                if isinstance(prima_dom, float) and prima_dom == 0: prima_dom = ''
+                if isinstance(dias_desc, float) and dias_desc == 0: dias_desc = ''
+                if isinstance(prima_fer, float) and prima_fer == 0: prima_fer = ''
+
+                # Formatear fecha
+                fecha = f.get('fecha', '')
+                if fecha and '00:00:00' in str(fecha):
+                    fecha = str(fecha).replace(' 00:00:00', '').replace('2026-', '')
+                    # Convertir YYYY-MM-DD a DD/MM
+                    parts = fecha.split('-')
+                    if len(parts) == 2:
+                        fecha = f"{parts[1]}/{parts[0]}"
+
                 vals = [
-                    row_num-2, nombre,
-                    f.get('tipo', ''), f.get('fecha', ''), f.get('mes', ''),
-                    f.get('dia', ''), f.get('horario', ''),
-                    f.get('prima_feriado') or '',
-                    f.get('dias_descanso') or '',
-                    f.get('he_doble') or '',
-                    f.get('he_triple') or '',
-                    f.get('he_dominical') or '',
-                    f.get('he_festiva') or '',
-                    f.get('prima_dominical') or '',
+                    contador,
+                    nombre,
+                    f.get('tipo', ''),
+                    fecha,
+                    f.get('mes', ''),
+                    f.get('dia', ''),
+                    f.get('horario', ''),
+                    prima_fer,
+                    dias_desc,
+                    he_doble,
+                    he_triple,
+                    he_dom,
+                    he_fest,
+                    prima_dom,
                     f.get('comentarios', '')
                 ]
                 for ci, val in enumerate(vals, 1):
                     c = ws.cell(row=row_num, column=ci, value=val)
                     c.font = DATA_FONT; c.border = BORDER
                     if fill: c.fill = fill
-                row_num += 1
 
-    ws.column_dimensions['A'].width = 5
-    ws.column_dimensions['B'].width = 25
-    ws.column_dimensions['C'].width = 16
-    ws.column_dimensions['D'].width = 10
-    ws.column_dimensions['E'].width = 16
-    ws.column_dimensions['F'].width = 10
-    ws.column_dimensions['G'].width = 12
-    for col in ['H','I','J','K','L','M','N']:
-        ws.column_dimensions[col].width = 12
-    ws.column_dimensions['O'].width = 30
+                # Log correcciones
+                for corr in f.get('correcciones_lft', []):
+                    correcciones_log.append({
+                        'nombre': nombre,
+                        'fecha': fecha,
+                        'original': f"HE doble orig: {f.get('he_doble_orig',0)}, HE triple orig: {f.get('he_triple_orig',0)}",
+                        'corregido': corr
+                    })
+
+                row_num += 1
+                contador += 1
+
+    # Anchos de columna
+    anchos = [5, 22, 14, 10, 16, 10, 12, 12, 12, 12, 12, 12, 12, 14, 30]
+    for i, w in enumerate(anchos, 1):
+        ws.column_dimensions[chr(64+i)].width = w
     ws.freeze_panes = 'A3'
 
-    correcciones_totales = [
-        {'nombre': nombre, 'msg': corr}
-        for nombre, d in colabs.items()
-        for corr in d.get('correcciones_lft', [])
-    ]
-    if correcciones_totales:
+    # Hoja de correcciones LFT (referencia)
+    if correcciones_log:
         ws2 = wb.create_sheet('Correcciones LFT')
-        for i, h in enumerate(['Colaborador', 'Corrección LFT aplicada'], 1):
+        hdrs2 = ['Colaborador', 'Fecha', 'Valores originales OPS', 'Corrección LFT aplicada']
+        for i, h in enumerate(hdrs2, 1):
             c = ws2.cell(row=1, column=i, value=h)
-            c.fill = HEADER_FILL; c.font = HEADER_FONT; c.alignment = CENTER; c.border = BORDER
-        for ri, corr in enumerate(correcciones_totales, 2):
+            c.fill = HEADER_FILL; c.font = HEADER_FONT
+            c.alignment = CENTER; c.border = BORDER
+        for ri, corr in enumerate(correcciones_log, 2):
             ws2.cell(row=ri, column=1, value=corr['nombre']).font = DATA_FONT
-            ws2.cell(row=ri, column=2, value=corr['msg']).font = DATA_FONT
-        ws2.column_dimensions['A'].width = 25
-        ws2.column_dimensions['B'].width = 70
+            ws2.cell(row=ri, column=2, value=corr['fecha']).font = DATA_FONT
+            ws2.cell(row=ri, column=3, value=corr['original']).font = DATA_FONT
+            ws2.cell(row=ri, column=4, value=corr['corregido']).font = DATA_FONT
+        ws2.column_dimensions['A'].width = 22
+        ws2.column_dimensions['B'].width = 10
+        ws2.column_dimensions['C'].width = 35
+        ws2.column_dimensions['D'].width = 70
 
     tmp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
     wb.save(tmp.name)
