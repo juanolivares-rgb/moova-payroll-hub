@@ -151,7 +151,8 @@ def mx_export_novedades():
     data = request.get_json()
     colabs = data.get('colabs', {})
     periodo = data.get('periodo', 'PERIODO')
-    filepath = export_mx_novedades(colabs, periodo)
+    otras_novedades = data.get('otras_novedades', [])
+    filepath = export_mx_novedades(colabs, periodo, otras_novedades)
     return send_file(filepath, as_attachment=True,
                      download_name=f'MX-novedades-estudio-{periodo.replace("/","-").replace(" ","-")}.xlsx')
 
