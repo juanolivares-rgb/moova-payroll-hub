@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}MOOVA · Payroll Hub{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:32px">
+    <div class="section-title">👋 Bienvenido al Payroll Hub</div>
+    <div class="section-sub">Gestión de nómina AR + MX · Novedades · Control · Métricas</div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px">
+    <a href="/ar" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:all .2s;border-left:4px solid #2563EB" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="font-size:32px;margin-bottom:12px">🇦🇷</div>
+        <div class="card-title">Argentina</div>
+        <div class="card-sub">Control de liquidación · HR Strategy</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-info">Novedades OPS</span>
+          <span class="badge badge-info">Novedades manuales</span>
+          <span class="badge badge-info">Control liquidación</span>
+          <span class="badge badge-info">Respuestas empleados</span>
+        </div>
+      </div>
+    </a>
+    <a href="/mx" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:all .2s;border-left:4px solid #16A34A" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="font-size:32px;margin-bottom:12px">🇲🇽</div>
+        <div class="card-title">México</div>
+        <div class="card-sub">Novedades OPS · Control prenómina · LFT</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-ok">Novedades OPS</span>
+          <span class="badge badge-ok">Novedades manuales</span>
+          <span class="badge badge-ok">Alertas LFT</span>
+          <span class="badge badge-ok">Control prenómina</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <a href="/metrics" style="text-decoration:none">
+    <div class="card" style="cursor:pointer;transition:all .2s;border-left:4px solid #D97706" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:32px;margin-bottom:12px">📊</div>
+      <div class="card-title">Métricas históricas</div>
+      <div class="card-sub">Dashboard acumulativo · HH.EE · Nómina · Compliance · Headcount</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge badge-warn">Ranking HH.EE</span>
+        <span class="badge badge-warn">Tendencia neto</span>
+        <span class="badge badge-warn">Alertas LFT recurrentes</span>
+        <span class="badge badge-warn">Diferencias históricas</span>
+      </div>
+    </div>
+  </a>
+
+  <div class="card" style="margin-top:20px;background:var(--moova-xlight);border-color:var(--moova-light)">
+    <div style="font-size:13px;font-weight:700;color:var(--moova);margin-bottom:8px">✨ Funciones con IA</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text2)">
+      <span>📷 Lectura de imágenes de OPS</span>
+      <span>·</span>
+      <span>✍️ Redacción de mensajes al estudio</span>
+      <span>·</span>
+      <span>💬 Respuestas personalizadas a empleados</span>
+      <span>·</span>
+      <span>🔍 Detección de anomalías</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
