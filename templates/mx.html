@@ -275,14 +275,18 @@ function renderMxNovTable(colabs, periodo) {
 
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  // Recoger otras novedades del formulario manual en tiempo real
-  const manualesActuales = getMxManualData();
+  // Leer TODOS los manuales del formulario
+  const todosLosManuales = getMxManualData();
   const tipos_otras = ['bono', 'vacaciones', 'ausencia', 'cambio_sueldo'];
-  const otrasActuales = manualesActuales.filter(m => tipos_otras.includes(m.tipo));
+  const otrasNovedades = todosLosManuales.filter(m => tipos_otras.includes(m.tipo));
+  console.log('Manuales totales:', todosLosManuales);
+  console.log('Otras novedades a exportar:', otrasNovedades);
+  const payload = { colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otrasNovedades };
+  console.log('Payload:', JSON.stringify(payload).substring(0, 200));
   const res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otrasActuales })
+    body: JSON.stringify(payload)
   });
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
