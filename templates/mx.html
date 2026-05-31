@@ -1,497 +1,339 @@
-{% extends "base.html" %}
-{% block title %}MOOVA · México{% endblock %}
-{% block content %}
-<div class="page">
-  <div style="margin-bottom:24px">
-    <div class="section-title">🇲🇽 México</div>
-    <div class="section-sub">Novedades OPS · Alertas LFT · Control prenómina</div>
-  </div>
+import os
+import json
+import sqlite3
+import base64
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, send_file, g
+from openpyxl import load_workbook
+import anthropic
+from dotenv import load_dotenv
+from utils.ar_parser import parse_ar_novedades, parse_ar_liquidacion, run_ar_control
+from utils.mx_parser import parse_mx_ops, parse_mx_prenomina, run_mx_control
+from utils.exporters import export_ar_control, export_mx_novedades, export_mx_control
+from utils.db import init_db, save_period_ar, save_period_mx, get_metrics
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab-btn-group="mx" data-tab="novedades" onclick="switchTab('mx','novedades')">1 · Novedades OPS → Estudio</button>
-    <button class="tab-btn" data-tab-btn-group="mx" data-tab="control" onclick="switchTab('mx','control')">2 · Control prenómina</button>
-  </div>
+load_dotenv()
 
-  <!-- ── TAB 1: NOVEDADES ── -->
-  <div class="tab-content active" data-tab-group="mx" data-tab="novedades">
-    <div class="grid-2" style="margin-bottom:20px">
-      <div class="card">
-        <div class="card-title">📥 Sheet de OPS con HH.EE</div>
-        <div class="card-sub">Archivo que te manda el área de Operaciones México</div>
-        <div class="upload-zone" id="mx-ops-zone">
-          <input type="file" accept=".xlsx,.xls" id="mx-ops-input" onchange="handleMxOps(this)">
-          <span class="upload-icon">📊</span>
-          <div class="upload-label">Novedades OPS México</div>
-          <div class="upload-sub">Novedades_Q_MM_YY.xlsx</div>
-          <div class="upload-filename" id="mx-ops-name"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">📷 O subir imagen</div>
-        <div class="card-sub">Claude extrae los datos automáticamente</div>
-        <div class="upload-zone" id="mx-img-zone">
-          <input type="file" accept="image/*" id="mx-img-input" onchange="handleMxImg(this)">
-          <span class="upload-icon">🖼️</span>
-          <div class="upload-label">Imagen de OPS</div>
-          <div class="upload-sub">PNG, JPG, captura de pantalla</div>
-          <div class="upload-filename" id="mx-img-name"></div>
-        </div>
-        <div class="loader" id="mx-img-loader" style="margin-top:12px">
-          <div class="spinner"></div> Claude está leyendo la imagen...
-        </div>
-      </div>
-    </div>
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
 
-    <!-- Novedades manuales MX -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title">✏️ Novedades manuales</div>
-      <div class="card-sub">Agregá colaboradores o conceptos que no vienen del sheet de OPS</div>
-      <div id="manual-rows-mx"></div>
-      <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="addManualRowMX()">+ Agregar novedad</button>
-    </div>
+ANTHROPIC_KEY = os.getenv('ANTHROPIC_API_KEY')
 
-    <!-- Stats novedades -->
-    <div id="mx-nov-stats" style="display:none" class="stats-bar" style="margin-bottom:20px">
-      <div class="stat-item"><div class="stat-val blue" id="mx-s-total">0</div><div class="stat-label">Colaboradores</div></div>
-      <div class="stat-item"><div class="stat-val green" id="mx-s-ok">0</div><div class="stat-label">Sin alertas</div></div>
-      <div class="stat-item"><div class="stat-val red" id="mx-s-alertas">0</div><div class="stat-label">Alertas LFT</div></div>
-    </div>
+# ── DB ──────────────────────────────────────────────────────
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect('moova_payroll.db')
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
-    <!-- Alertas LFT -->
-    <div id="mx-nov-alerts" style="margin-bottom:16px"></div>
+@app.teardown_appcontext
+def close_db(e=None):
+    db = g.pop('db', None)
+    if db: db.close()
 
-    <!-- Tabla novedades -->
-    <div id="mx-nov-table-section" style="display:none" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div>
-          <div class="card-title">Novedades consolidadas</div>
-          <div class="card-sub" id="mx-nov-periodo"></div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="exportMxNov()">↓ Generar archivo para estudio</button>
-      </div>
-      <div class="table-wrap" id="mx-nov-table"></div>
-    </div>
-  </div>
+with app.app_context():
+    init_db(sqlite3.connect('moova_payroll.db'))
 
-  <!-- ── TAB 2: CONTROL PRENÓMINA ── -->
-  <div class="tab-content" data-tab-group="mx" data-tab="control">
-    <div class="grid-2" style="margin-bottom:20px">
-      <div class="card">
-        <div class="card-title">📋 Novedades OPS (opcional)</div>
-        <div class="card-sub">Si ya lo cargaste en el tab anterior se usa automáticamente</div>
-        <div class="upload-zone" id="mx-ctrl-ops-zone">
-          <input type="file" accept=".xlsx,.xls" id="mx-ctrl-ops-input" onchange="handleMxCtrlFile('ops',this)">
-          <span class="upload-icon">📋</span>
-          <div class="upload-label">Novedades OPS</div>
-          <div class="upload-sub">Novedades_Q_MM_YY.xlsx</div>
-          <div class="upload-filename" id="mx-ctrl-ops-name"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">📊 Prenómina del estudio</div>
-        <div class="card-sub">Archivo que te mandó Estudio MX / RC Abogados</div>
-        <div class="upload-zone" id="mx-ctrl-nom-zone">
-          <input type="file" accept=".xlsx,.xls" id="mx-ctrl-nom-input" onchange="handleMxCtrlFile('nom',this)">
-          <span class="upload-icon">📊</span>
-          <div class="upload-label">Prenómina estudio</div>
-          <div class="upload-sub">Control_Nomina_MX_MM_YY.xlsx</div>
-          <div class="upload-filename" id="mx-ctrl-nom-name"></div>
-        </div>
-      </div>
-    </div>
+# ── ROUTES ──────────────────────────────────────────────────
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px">
-      <button class="btn btn-primary" id="mx-ctrl-run-btn" disabled onclick="runMxControl()">Ejecutar control →</button>
-      <div class="loader" id="mx-ctrl-loader">
-        <div class="spinner"></div> Procesando...
-      </div>
-    </div>
+@app.route('/ar')
+def ar():
+    return render_template('ar.html')
 
-    <!-- Stats control -->
-    <div id="mx-ctrl-stats" style="display:none" class="stats-bar" style="margin-bottom:20px">
-      <div class="stat-item"><div class="stat-val blue" id="mx-cs-total">0</div><div class="stat-label">Colaboradores</div></div>
-      <div class="stat-item"><div class="stat-val green" id="mx-cs-ok">0</div><div class="stat-label">OK</div></div>
-      <div class="stat-item"><div class="stat-val red" id="mx-cs-diff">0</div><div class="stat-label">Con diferencia</div></div>
-      <div class="stat-item"><div class="stat-val" id="mx-cs-neto" style="color:var(--text)">$0</div><div class="stat-label">Neto total MXN</div></div>
-    </div>
+@app.route('/mx')
+def mx():
+    return render_template('mx.html')
 
-    <!-- Alertas control -->
-    <div id="mx-ctrl-alerts" style="margin-bottom:16px"></div>
+@app.route('/metrics')
+def metrics():
+    return render_template('metrics.html')
 
-    <!-- Mensaje estudio MX -->
-    <div id="mx-studio-msg" style="display:none" class="studio-msg">
-      <div class="studio-msg-header">
-        <div class="studio-msg-label">✍️ Mensaje para Estudio MX (generado con IA)</div>
-        <button class="btn btn-outline btn-sm" onclick="copyText('mx-msg-text',this)">Copiar</button>
-      </div>
-      <div class="loader" id="mx-msg-loader" style="margin-bottom:8px">
-        <div class="spinner"></div> Claude está redactando el mensaje...
-      </div>
-      <div class="studio-msg-text" id="mx-msg-text"></div>
-    </div>
+# ── API: IMAGEN → CLAUDE VISION ─────────────────────────────
+@app.route('/api/extract-image', methods=['POST'])
+def extract_image():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
+    
+    img = request.files['image']
+    country = request.form.get('country', 'ar')
+    img_data = base64.standard_b64encode(img.read()).decode('utf-8')
+    media_type = img.content_type or 'image/png'
+    
+    client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+    
+    if country == 'ar':
+        prompt = """Analizá esta planilla de horas extra de Argentina. 
+        Extraé TODOS los registros y devolvé SOLO un JSON con este formato exacto:
+        {
+          "registros": [
+            {
+              "nombre": "Nombre Apellido",
+              "puesto": "Puesto",
+              "fecha": "DD/MM",
+              "mes": "Mes",
+              "dia_semana": "Lu/Ma/Mi/Ju/Vi/Sa/Do",
+              "horario": "HH a HH",
+              "horas": número
+            }
+          ]
+        }
+        El tipo de HH.EE se clasifica automáticamente: Sa/Do/Feriado = 100%, resto = 50%.
+        Devolvé SOLO el JSON, sin texto adicional."""
+    else:
+        prompt = """Analizá esta planilla de novedades de México (HH.EE).
+        Extraé TODOS los registros y devolvé SOLO un JSON con este formato exacto:
+        {
+          "registros": [
+            {
+              "colaborador": "Nombre Apellido",
+              "tipo": "tipo de jornada",
+              "fecha": "DD/MM",
+              "dia_semana": "nombre del día",
+              "horario": "HH a HH",
+              "he_doble": número,
+              "he_triple": número,
+              "he_dominical": número,
+              "he_festiva": número,
+              "dias_descanso": número,
+              "prima_dominical": número,
+              "comentarios": "texto o vacío"
+            }
+          ]
+        }
+        Devolvé SOLO el JSON, sin texto adicional."""
+    
+    try:
+        response = client.messages.create(
+            model="claude-opus-4-5",
+            max_tokens=4000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_data}},
+                    {"type": "text", "text": prompt}
+                ]
+            }]
+        )
+        raw = response.content[0].text.strip()
+        # Limpiar posibles ```json
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[1].rsplit('```', 1)[0]
+        data = json.loads(raw)
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-    <!-- Tabla control -->
-    <div id="mx-ctrl-table-section" style="display:none" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div class="card-title">Control por colaborador</div>
-        <button class="btn btn-outline btn-sm" onclick="exportMxCtrl()">↓ Exportar reporte</button>
-      </div>
-      <div class="table-wrap" id="mx-ctrl-table"></div>
-    </div>
-  </div>
-</div>
-{% endblock %}
+# ── API: AR CONTROL ─────────────────────────────────────────
+@app.route('/api/ar/control', methods=['POST'])
+def ar_control():
+    nov_file = request.files.get('novedades')
+    liq_file = request.files.get('liquidacion')
+    manuales = request.form.get('manuales', '[]')
+    
+    if not nov_file or not liq_file:
+        return jsonify({'error': 'Faltan archivos'}), 400
+    
+    try:
+        manuales_data = json.loads(manuales)
+        nov_data, periodo = parse_ar_novedades(nov_file, manuales_data)
+        liq_data = parse_ar_liquidacion(liq_file)
+        results = run_ar_control(nov_data, liq_data)
+        
+        # Guardar en métricas
+        db = get_db()
+        save_period_ar(db, periodo, results)
+        
+        return jsonify({'success': True, 'periodo': periodo, 'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-{% block scripts %}
-<script>
-let mxOpsFile = null;
-let mxNomFile = null;
-let mxCtrlOpsFile = null;
-let mxNovData = null;
-let mxCtrlResults = [];
-let mxPeriodo = '';
-let manualRowsMX = [];
+# ── API: AR EXPORT ──────────────────────────────────────────
+@app.route('/api/ar/export', methods=['POST'])
+def ar_export():
+    data = request.get_json()
+    periodo = data.get('periodo', 'PERIODO')
+    results = data.get('results', [])
+    filepath = export_ar_control(results, periodo)
+    return send_file(filepath, as_attachment=True,
+                     download_name=f'AR-control-nomina-{periodo.replace("/","-")}.xlsx')
 
-// ── NOVEDADES ──
-async function handleMxOps(input) {
-  const file = input.files[0];
-  if (!file) return;
-  mxOpsFile = file;
-  document.getElementById('mx-ops-name').textContent = file.name;
-  document.getElementById('mx-ops-zone').classList.add('loaded');
+# ── API: AR MENSAJE ESTUDIO (CLAUDE) ────────────────────────
+@app.route('/api/ar/mensaje-estudio', methods=['POST'])
+def ar_mensaje_estudio():
+    data = request.get_json()
+    diffs = data.get('diffs', [])
+    periodo = data.get('periodo', '')
+    
+    if not diffs:
+        return jsonify({'mensaje': ''})
+    
+    client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+    
+    diff_txt = '\n'.join([
+        f"- {d['nombre']} (Leg.{d['leg']}): Neto estudio ${d['neto']:,.2f} vs MOOV ${d['netoMoov']:,.2f} → Dif: ${d['dif']:+,.2f}"
+        for d in diffs
+    ])
+    
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=800,
+        messages=[{"role": "user", "content": f"""
+Redactá un mensaje profesional y cordial para enviar a Edith (HR Strategy), el estudio de liquidación de Argentina.
+El mensaje debe informar sobre diferencias encontradas en la preliquidación del período {periodo} y solicitar corrección.
 
-  const formData = new FormData();
-  formData.append('ops', file);
-  formData.append('manuales', JSON.stringify(getMxManualData()));
+Diferencias detectadas:
+{diff_txt}
 
-  try {
-    const res = await fetch('/api/mx/novedades', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-      mxNovData = data.colabs;
-      mxPeriodo = data.periodo;
-      renderMxNovStats(data.colabs);
-      renderMxNovAlerts(data.colabs);
-      renderMxNovTable(data.colabs, data.periodo);
-    } else {
-      alert('Error: ' + data.error);
-    }
-  } catch (e) {
-    alert('Error: ' + e.message);
-  }
-}
+Tono: formal pero directo, sin introducciones largas. Firmá como Juan.
+Devolvé SOLO el mensaje, sin explicaciones adicionales.
+"""}]
+    )
+    return jsonify({'mensaje': response.content[0].text})
 
-async function handleMxImg(input) {
-  const file = input.files[0];
-  if (!file) return;
-  document.getElementById('mx-img-name').textContent = file.name;
-  document.getElementById('mx-img-zone').classList.add('loaded');
-  document.getElementById('mx-img-loader').classList.add('visible');
+# ── API: AR RESPUESTA EMPLEADO (CLAUDE) ─────────────────────
+@app.route('/api/ar/respuesta-empleado', methods=['POST'])
+def ar_respuesta_empleado():
+    data = request.get_json()
+    empleado = data.get('empleado', {})
+    pregunta = data.get('pregunta', '')
+    
+    client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+    
+    concepto_txt = f"""
+Nombre: {empleado.get('nombre')}
+Sueldo básico: ${empleado.get('sueldo', 0):,.2f}
+HH.EE 50%: {empleado.get('he50Hs') or 0} hs (${empleado.get('he50c') or 0:,.2f})
+HH.EE 100%: {empleado.get('he100Hs') or 0} hs (${empleado.get('he100c') or 0:,.2f})
+Total remuneración: ${empleado.get('totalRem', 0):,.2f}
+Descuentos de ley: ${empleado.get('descLey', 0):,.2f}
+Neto: ${empleado.get('neto', 0):,.2f}
+"""
+    
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=600,
+        messages=[{"role": "user", "content": f"""
+Sos el área de People de MOOVA. Respondé la consulta de este colaborador sobre su recibo de sueldo.
 
-  const formData = new FormData();
-  formData.append('image', file);
-  formData.append('country', 'mx');
+Datos del recibo:
+{concepto_txt}
 
-  try {
-    const res = await fetch('/api/extract-image', { method: 'POST', body: formData });
-    const data = await res.json();
-    document.getElementById('mx-img-loader').classList.remove('visible');
-    if (data.success) {
-      alert('Imagen procesada: ' + data.data.registros.length + ' registros extraídos.\nFuncionalidad de integración completa en desarrollo.');
-    } else {
-      alert('Error: ' + data.error);
-    }
-  } catch (e) {
-    document.getElementById('mx-img-loader').classList.remove('visible');
-    alert('Error: ' + e.message);
-  }
-}
+Consulta del colaborador: "{pregunta}"
 
-function renderMxNovStats(colabs) {
-  const total = Object.keys(colabs).length;
-  const conAlerta = Object.values(colabs).filter(d => d.alertas && d.alertas.length > 0).length;
-  document.getElementById('mx-s-total').textContent = total;
-  document.getElementById('mx-s-ok').textContent = total - conAlerta;
-  document.getElementById('mx-s-alertas').textContent = conAlerta;
-  document.getElementById('mx-nov-stats').style.display = 'flex';
-}
+Tono: claro, humano, sin tecnicismos. Explicá los números de forma simple.
+Devolvé SOLO la respuesta para el empleado.
+"""}]
+    )
+    return jsonify({'respuesta': response.content[0].text})
 
-function renderMxNovAlerts(colabs) {
-  const alertsEl = document.getElementById('mx-nov-alerts');
-  alertsEl.innerHTML = '';
-  Object.entries(colabs).forEach(([nombre, d]) => {
-    if (!d.alertas || !d.alertas.length) return;
-    d.alertas.forEach(a => {
-      alertsEl.innerHTML += `<div class="alert alert-${a.tipo}">
-        <div class="alert-title">${a.tipo === 'err' ? '🚨' : '⚠️'} ${nombre}</div>
-        <div>${a.msg}</div>
-      </div>`;
-    });
-  });
-}
+# ── API: MX NOVEDADES ───────────────────────────────────────
+@app.route('/api/mx/novedades', methods=['POST'])
+def mx_novedades():
+    ops_file = request.files.get('ops')
+    manuales = request.form.get('manuales', '[]')
+    
+    if not ops_file:
+        return jsonify({'error': 'Falta archivo de OPS'}), 400
+    
+    try:
+        manuales_data = json.loads(manuales)
+        colabs, periodo, tope, correcciones_lft = parse_mx_ops(ops_file, manuales_data)
+        return jsonify({'success': True, 'periodo': periodo, 'tope': tope, 'colabs': colabs, 'correcciones_lft': correcciones_lft})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-function renderMxNovTable(colabs, periodo) {
-  document.getElementById('mx-nov-periodo').textContent = periodo || '';
-  let html = `<table><thead><tr>
-    <th>Colaborador</th>
-    <th class="num">HE Doble</th><th class="num">HE Triple</th>
-    <th class="num">HE Dom.</th><th class="num">Total HE</th>
-    <th class="num">Días Desc.</th><th class="num">Prima Dom.</th>
-    <th>Comentarios</th><th>Estado</th>
-  </tr></thead><tbody>`;
+# ── API: MX EXPORT NOVEDADES ────────────────────────────────
+@app.route('/api/mx/export-novedades', methods=['POST'])
+def mx_export_novedades():
+    data = request.get_json()
+    colabs = data.get('colabs', {})
+    periodo = data.get('periodo', 'PERIODO')
+    filepath = export_mx_novedades(colabs, periodo)
+    return send_file(filepath, as_attachment=True,
+                     download_name=f'MX-novedades-estudio-{periodo.replace("/","-").replace(" ","-")}.xlsx')
 
-  Object.entries(colabs).forEach(([nombre, d]) => {
-    const totalHE = (d.heDoble||0) + (d.heTriple||0) + (d.heDom||0) + (d.heFest||0);
-    const hasErr = d.alertas && d.alertas.some(a => a.tipo === 'err');
-    const hasWarn = d.alertas && d.alertas.some(a => a.tipo === 'warn');
-    const rc = hasErr ? 'row-err' : hasWarn ? 'row-warn' : '';
-    const badge = hasErr
-      ? '<span class="badge badge-err">ERROR LFT</span>'
-      : hasWarn
-        ? '<span class="badge badge-warn">VERIFICAR</span>'
-        : '<span class="badge badge-ok">OK</span>';
-    html += `<tr class="${rc}">
-      <td class="name">${nombre}</td>
-      <td class="num ${d.heDoble ? 'info' : 'muted'}">${d.heDoble || '—'}</td>
-      <td class="num ${d.heTriple ? 'info' : 'muted'}">${d.heTriple || '—'}</td>
-      <td class="num ${d.heDom ? 'info' : 'muted'}">${d.heDom || '—'}</td>
-      <td class="num ${totalHE > 9 ? 'warn' : totalHE > 0 ? 'info' : 'muted'}">${totalHE || '—'}</td>
-      <td class="num ${d.diasDesc ? 'info' : 'muted'}">${d.diasDesc || '—'}</td>
-      <td class="num ${d.primaDom ? 'info' : 'muted'}">${d.primaDom || '—'}</td>
-      <td class="muted" style="font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${(d.comentarios||'').slice(0,40) || '—'}</td>
-      <td>${badge}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('mx-nov-table').innerHTML = html;
-  document.getElementById('mx-nov-table-section').style.display = 'block';
-}
+# ── API: MX CONTROL ─────────────────────────────────────────
+@app.route('/api/mx/control', methods=['POST'])
+def mx_control():
+    ops_file = request.files.get('ops')
+    nom_file = request.files.get('nomina')
+    manuales = request.form.get('manuales', '[]')
+    
+    if not nom_file:
+        return jsonify({'error': 'Falta prenómina del estudio'}), 400
+    
+    try:
+        manuales_data = json.loads(manuales)
+        colabs, periodo, tope, _ = parse_mx_ops(ops_file, manuales_data) if ops_file else ({}, '', 9, [])
+        empleados, periodo_nom = parse_mx_prenomina(nom_file)
+        results = run_mx_control(colabs, empleados)
+        per = periodo_nom or periodo
+        
+        db = get_db()
+        save_period_mx(db, per, results, colabs)
+        
+        return jsonify({'success': True, 'periodo': per, 'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-async function exportMxNov() {
-  if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  const res = await fetch('/api/mx/export-novedades', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo })
-  });
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `MX-novedades-estudio-${(mxPeriodo||'PERIODO').replace(/\//g,'-').replace(/ /g,'-')}.xlsx`;
-  a.click();
-}
+# ── API: MX MENSAJE ESTUDIO (CLAUDE) ────────────────────────
+@app.route('/api/mx/mensaje-estudio', methods=['POST'])
+def mx_mensaje_estudio():
+    data = request.get_json()
+    diffs = data.get('diffs', [])
+    periodo = data.get('periodo', '')
+    
+    if not diffs:
+        return jsonify({'mensaje': ''})
+    
+    client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+    
+    diff_txt = '\n'.join([
+        f"- {d['nombre']}: HE dobles OPS={d.get('heDobleOPS','?')} vs Estudio={d.get('heDobleEst',0)}, "
+        f"HE triples OPS={d.get('heTripleOPS','?')} vs Estudio={d.get('heTripleEst',0)}, "
+        f"Días descanso OPS={d.get('diasDescOPS','?')} vs Estudio={d.get('diasDescEst',0)}"
+        for d in diffs
+    ])
+    
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=800,
+        messages=[{"role": "user", "content": f"""
+Redactá un mensaje formal para el estudio de nómina de México (Estudio MX / RC Abogados).
+Informá sobre diferencias entre las novedades enviadas y la prenómina del período {periodo}.
+Solicitá corrección y reenvío.
 
-// ── MANUALES MX ──
-function addManualRowMX() {
-  const id = Date.now();
-  manualRowsMX.push(id);
-  const div = document.createElement('div');
-  div.className = 'manual-row';
-  div.id = 'mxrow-' + id;
-  div.innerHTML = `
-    <div class="form-group">
-      <label>Colaborador</label>
-      <input type="text" placeholder="Nombre Apellido" data-id="${id}" data-field="nombre">
-    </div>
-    <div class="form-group">
-      <label>Tipo</label>
-      <select data-id="${id}" data-field="tipo">
-        <option value="heDoble">HE Doble</option>
-        <option value="heTriple">HE Triple</option>
-        <option value="heDom">HE Dominical</option>
-        <option value="diasDesc">Días Descanso</option>
-        <option value="bono">Bono</option>
-        <option value="ausencia">Ausencia/Incidencia</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Horas / Días</label>
-      <input type="number" placeholder="0" data-id="${id}" data-field="valor">
-    </div>
-    <div class="form-group">
-      <label>Comentario</label>
-      <input type="text" placeholder="Opcional" data-id="${id}" data-field="comentarios">
-    </div>
-    <button class="btn btn-danger btn-sm" style="margin-top:18px" onclick="removeMxRow(${id})">✕</button>
-  `;
-  document.getElementById('manual-rows-mx').appendChild(div);
-}
+Diferencias:
+{diff_txt}
 
-function removeMxRow(id) {
-  document.getElementById('mxrow-' + id)?.remove();
-  manualRowsMX = manualRowsMX.filter(x => x !== id);
-}
+Tono: formal, cordial, directo. Firmá como Juan.
+Devolvé SOLO el mensaje.
+"""}]
+    )
+    return jsonify({'mensaje': response.content[0].text})
 
-function getMxManualData() {
-  return manualRowsMX.map(id => {
-    const inputs = document.querySelectorAll(`[data-id="${id}"]`);
-    const obj = {};
-    inputs.forEach(el => { obj[el.dataset.field] = el.value; });
-    return obj;
-  }).filter(m => m.nombre);
-}
+# ── API: MX EXPORT CONTROL ──────────────────────────────────
+@app.route('/api/mx/export-control', methods=['POST'])
+def mx_export_control():
+    data = request.get_json()
+    results = data.get('results', [])
+    periodo = data.get('periodo', 'PERIODO')
+    filepath = export_mx_control(results, periodo)
+    return send_file(filepath, as_attachment=True,
+                     download_name=f'MX-control-nomina-{periodo.replace("/","-").replace(" ","-")}.xlsx')
 
-// ── CONTROL ──
-function handleMxCtrlFile(type, input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (type === 'ops') {
-    mxCtrlOpsFile = file;
-    document.getElementById('mx-ctrl-ops-name').textContent = file.name;
-    document.getElementById('mx-ctrl-ops-zone').classList.add('loaded');
-  } else {
-    mxNomFile = file;
-    document.getElementById('mx-ctrl-nom-name').textContent = file.name;
-    document.getElementById('mx-ctrl-nom-zone').classList.add('loaded');
-    document.getElementById('mx-ctrl-run-btn').disabled = false;
-  }
-}
+# ── API: MÉTRICAS ────────────────────────────────────────────
+@app.route('/api/metrics', methods=['GET'])
+def api_metrics():
+    try:
+        db = get_db()
+        data = get_metrics(db)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-async function runMxControl() {
-  if (!mxNomFile) return;
-  document.getElementById('mx-ctrl-loader').classList.add('visible');
-  document.getElementById('mx-ctrl-run-btn').disabled = true;
-
-  const formData = new FormData();
-  if (mxCtrlOpsFile) formData.append('ops', mxCtrlOpsFile);
-  else if (mxOpsFile) formData.append('ops', mxOpsFile);
-  formData.append('nomina', mxNomFile);
-  formData.append('manuales', JSON.stringify(getMxManualData()));
-
-  try {
-    const res = await fetch('/api/mx/control', { method: 'POST', body: formData });
-    const data = await res.json();
-    document.getElementById('mx-ctrl-loader').classList.remove('visible');
-    document.getElementById('mx-ctrl-run-btn').disabled = false;
-
-    if (data.success) {
-      mxCtrlResults = data.results;
-      mxPeriodo = data.periodo || mxPeriodo;
-      renderMxCtrlStats(data.results);
-      renderMxCtrlAlerts(data.results, data.periodo);
-      renderMxCtrlTable(data.results);
-    } else {
-      alert('Error: ' + data.error);
-    }
-  } catch (e) {
-    document.getElementById('mx-ctrl-loader').classList.remove('visible');
-    document.getElementById('mx-ctrl-run-btn').disabled = false;
-    alert('Error: ' + e.message);
-  }
-}
-
-function renderMxCtrlStats(results) {
-  const total = results.length;
-  const diffs = results.filter(r => r.hasDiff);
-  const neto = results.reduce((s,r) => s+r.neto, 0);
-  document.getElementById('mx-cs-total').textContent = total;
-  document.getElementById('mx-cs-ok').textContent = total - diffs.length;
-  document.getElementById('mx-cs-diff').textContent = diffs.length;
-  document.getElementById('mx-cs-neto').textContent = '$' + fmt(neto);
-  document.getElementById('mx-ctrl-stats').style.display = 'flex';
-}
-
-function renderMxCtrlAlerts(results, periodo) {
-  const alertsEl = document.getElementById('mx-ctrl-alerts');
-  alertsEl.innerHTML = '';
-  const diffs = results.filter(r => r.hasDiff);
-  const incaps = results.filter(r => r.alertaIncap);
-
-  incaps.forEach(r => {
-    alertsEl.innerHTML += `<div class="alert alert-err">
-      <div class="alert-title">🚨 ${r.nombre}</div>
-      <div>Incapacidad activa con HH.EE liquidadas — requiere corrección del estudio</div>
-    </div>`;
-  });
-
-  if (!diffs.length) {
-    alertsEl.innerHTML += '<div class="alert alert-ok"><div class="alert-title">✓ Sin diferencias</div>La prenómina coincide con las novedades OPS en todos los conceptos.</div>';
-    return;
-  }
-
-  const items = diffs.map(r => {
-    let det = [];
-    if (r.dHD !== null && Math.abs(r.dHD) > 0.1) det.push(`HE dobles: OPS ${r.heDobleOPS??'?'} / Estudio ${r.heDobleEst} (${r.dHD > 0 ? '+' : ''}${r.dHD})`);
-    if (r.dHT !== null && Math.abs(r.dHT) > 0.1) det.push(`HE triples: OPS ${r.heTripleOPS??'?'} / Estudio ${r.heTripleEst} (${r.dHT > 0 ? '+' : ''}${r.dHT})`);
-    if (r.dDD !== null && Math.abs(r.dDD) > 0.1) det.push(`Días descanso: OPS ${r.diasDescOPS??'?'} / Estudio ${r.diasDescEst} (${r.dDD > 0 ? '+' : ''}${r.dDD})`);
-    return `<div style="margin-top:4px">· <strong>${r.nombre}</strong>${det.length ? ': ' + det.join(' · ') : ''}</div>`;
-  }).join('');
-
-  alertsEl.innerHTML += `<div class="alert alert-err"><div class="alert-title">🚨 ${diffs.length} colaborador(es) con diferencia</div>${items}</div>`;
-
-  // Mensaje Claude
-  const studioEl = document.getElementById('mx-studio-msg');
-  studioEl.style.display = 'block';
-  document.getElementById('mx-msg-loader').classList.add('visible');
-
-  fetch('/api/mx/mensaje-estudio', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ diffs, periodo })
-  }).then(r => r.json()).then(data => {
-    document.getElementById('mx-msg-loader').classList.remove('visible');
-    document.getElementById('mx-msg-text').textContent = data.mensaje || '';
-  }).catch(() => {
-    document.getElementById('mx-msg-loader').classList.remove('visible');
-  });
-}
-
-function renderMxCtrlTable(results) {
-  let html = `<table><thead>
-    <tr>
-      <th>Clave</th><th>Colaborador</th>
-      <th class="num">HE Doble OPS</th><th class="num">HE Doble Est.</th><th class="num">Dif.</th>
-      <th class="num">HE Triple OPS</th><th class="num">HE Triple Est.</th><th class="num">Dif.</th>
-      <th class="num">Días Desc. OPS</th><th class="num">Días Desc. Est.</th><th class="num">Dif.</th>
-      <th class="num">Percepciones</th><th class="num">Neto MXN</th><th>Estado</th>
-    </tr>
-  </thead><tbody>`;
-
-  results.forEach(r => {
-    const rc = r.hasDiff ? 'row-err' : '';
-    const badge = r.hasDiff
-      ? '<span class="badge badge-err">DIFERENCIA</span>'
-      : '<span class="badge badge-ok">OK</span>';
-
-    const difCell = (v, d) => d === null
-      ? '<td class="num muted">—</td>'
-      : `<td class="num ${Math.abs(d) > 0.1 ? 'err' : 'ok'}">${d > 0 ? '+' : ''}${d}</td>`;
-
-    html += `<tr class="${rc}">
-      <td class="muted">${r.clave}</td>
-      <td class="name">${r.nombre.split(' ').slice(0,3).join(' ')}</td>
-      <td class="num ${r.heDobleOPS ? 'info' : 'muted'}">${r.heDobleOPS ?? '—'}</td>
-      <td class="num ${r.heDobleEst ? 'info' : 'muted'}">${r.heDobleEst || '—'}</td>
-      ${difCell(r.heDobleOPS, r.dHD)}
-      <td class="num ${r.heTripleOPS ? 'info' : 'muted'}">${r.heTripleOPS ?? '—'}</td>
-      <td class="num ${r.heTripleEst ? 'info' : 'muted'}">${r.heTripleEst || '—'}</td>
-      ${difCell(r.heTripleOPS, r.dHT)}
-      <td class="num ${r.diasDescOPS ? 'info' : 'muted'}">${r.diasDescOPS ?? '—'}</td>
-      <td class="num ${r.diasDescEst ? 'info' : 'muted'}">${r.diasDescEst || '—'}</td>
-      ${difCell(r.diasDescOPS, r.dDD)}
-      <td class="num">$${fmt(r.totalPerc)}</td>
-      <td class="num">$${fmt(r.neto)}</td>
-      <td>${badge}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('mx-ctrl-table').innerHTML = html;
-  document.getElementById('mx-ctrl-table-section').style.display = 'block';
-}
-
-async function exportMxCtrl() {
-  const res = await fetch('/api/mx/export-control', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ results: mxCtrlResults, periodo: mxPeriodo })
-  });
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `MX-control-nomina-${(mxPeriodo||'PERIODO').replace(/\//g,'-').replace(/ /g,'-')}.xlsx`;
-  a.click();
-}
-</script>
-{% endblock %}
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
