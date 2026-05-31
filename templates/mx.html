@@ -154,6 +154,7 @@ let mxNovData = null;
 let mxCtrlResults = [];
 let mxPeriodo = '';
 let manualRowsMX = [];
+let mxOtrasNovedades = [];
 
 // ── NOVEDADES ──
 async function handleMxOps(input) {
@@ -173,6 +174,7 @@ async function handleMxOps(input) {
     if (data.success) {
       mxNovData = data.colabs;
       mxPeriodo = data.periodo;
+      mxOtrasNovedades = data.otras_novedades || [];
       renderMxNovStats(data.colabs);
       renderMxNovAlerts(data.colabs);
       renderCorreccionesLFT(data.correcciones_lft || []);
@@ -273,10 +275,13 @@ function renderMxNovTable(colabs, periodo) {
 
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
+  // Capturar manuales frescos del DOM en este momento
+  capturarManualesMX();
+  console.log('Exportando con otras novedades:', mxOtrasNovedades);
   const res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo })
+    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: mxOtrasNovedades })
   });
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -300,22 +305,28 @@ function addManualRowMX() {
     </div>
     <div class="form-group">
       <label>Tipo</label>
-      <select data-id="${id}" data-field="tipo">
-        <option value="heDoble">HE Doble</option>
-        <option value="heTriple">HE Triple</option>
-        <option value="heDom">HE Dominical</option>
-        <option value="diasDesc">Días Descanso</option>
-        <option value="bono">Bono</option>
-        <option value="ausencia">Ausencia/Incidencia</option>
+      <select data-id="${id}" data-field="tipo" onchange="updateManualLabel(this, ${id})">
+        <optgroup label="Incidencias (van a Novedades)">
+          <option value="heDoble">HE Doble</option>
+          <option value="heTriple">HE Triple</option>
+          <option value="heDom">HE Dominical</option>
+          <option value="diasDesc">Días Descanso</option>
+        </optgroup>
+        <optgroup label="Otras novedades (van a hoja separada)">
+          <option value="bono">Bono / Gratificación</option>
+          <option value="vacaciones">Vacaciones</option>
+          <option value="ausencia">Ausencia / Incidencia</option>
+          <option value="cambio_sueldo">Cambio de sueldo</option>
+        </optgroup>
       </select>
     </div>
     <div class="form-group">
-      <label>Horas / Días</label>
-      <input type="number" placeholder="0" data-id="${id}" data-field="valor">
+      <label id="lbl-valor-${id}">Horas / Días</label>
+      <input type="text" placeholder="0" data-id="${id}" data-field="valor">
     </div>
     <div class="form-group">
-      <label>Comentario</label>
-      <input type="text" placeholder="Opcional" data-id="${id}" data-field="comentarios">
+      <label>Detalle</label>
+      <input type="text" placeholder="Descripción o monto" data-id="${id}" data-field="comentarios">
     </div>
     <button class="btn btn-danger btn-sm" style="margin-top:18px" onclick="removeMxRow(${id})">✕</button>
   `;
@@ -325,15 +336,40 @@ function addManualRowMX() {
 function removeMxRow(id) {
   document.getElementById('mxrow-' + id)?.remove();
   manualRowsMX = manualRowsMX.filter(x => x !== id);
+  capturarManualesMX();
+}
+
+function capturarManualesMX() {
+  const tipos_otras = ['bono', 'vacaciones', 'ausencia', 'cambio_sueldo'];
+  const todos = syncManualData();
+  mxOtrasNovedades = todos.filter(m => tipos_otras.includes(m.tipo));
 }
 
 function getMxManualData() {
-  return manualRowsMX.map(id => {
-    const inputs = document.querySelectorAll(`[data-id="${id}"]`);
-    const obj = {};
-    inputs.forEach(el => { obj[el.dataset.field] = el.value; });
-    return obj;
-  }).filter(m => m.nombre);
+  // Retornar directamente desde el array interno (más confiable que leer el DOM)
+  return mxManualData || [];
+}
+
+// Array interno que guarda los manuales como objetos
+let mxManualData = [];
+
+function syncManualData() {
+  mxManualData = [];
+  // Leer cada fila del formulario directamente por su container
+  const container = document.getElementById('manual-rows-mx');
+  if (!container) return mxManualData;
+  const rows = container.querySelectorAll('.manual-row');
+  rows.forEach(row => {
+    const nombre = (row.querySelector('input[data-field="nombre"]') || row.querySelector('input[placeholder="Nombre Apellido"]'))?.value?.trim() || '';
+    const tipoEl = row.querySelector('select[data-field="tipo"]') || row.querySelector('select');
+    const tipo = tipoEl ? tipoEl.value : '';
+    const valorEl = row.querySelector('input[data-field="valor"]') || row.querySelectorAll('input[type="text"]')[1] || row.querySelectorAll('input')[1];
+    const valor = valorEl ? valorEl.value : '';
+    const comentEl = row.querySelector('input[data-field="comentarios"]') || row.querySelectorAll('input[type="text"]')[2] || row.querySelectorAll('input')[2];
+    const comentarios = comentEl ? comentEl.value : '';
+    if (nombre) mxManualData.push({ nombre, tipo, valor, comentarios });
+  });
+  return mxManualData;
 }
 
 // ── CONTROL ──
@@ -543,6 +579,17 @@ function generarResumenOPS(porNombre) {
   });
   lineas.push('Por favor tener en cuenta para los próximos envíos. Saludos,','Juan');
   return lineas.join('\n');
+}
+
+function updateManualLabel(sel, id) {
+  const tipo = sel.value;
+  const lbl = document.getElementById('lbl-valor-' + id);
+  if (!lbl) return;
+  const labels = {
+    'heDoble': 'Horas', 'heTriple': 'Horas', 'heDom': 'Horas', 'diasDesc': 'Días',
+    'bono': 'Monto (MXN)', 'vacaciones': 'Días', 'ausencia': 'Días', 'cambio_sueldo': 'Nuevo sueldo'
+  };
+  lbl.textContent = labels[tipo] || 'Valor';
 }
 </script>
 {% endblock %}
