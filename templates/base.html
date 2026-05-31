@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MOOVA · Payroll Hub{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --moova: #2563EB;
+  --moova-dark: #1D4ED8;
+  --moova-light: #DBEAFE;
+  --moova-xlight: #EFF6FF;
+  --bg: #F8FAFF;
+  --bg2: #FFFFFF;
+  --text: #0F172A;
+  --text2: #475569;
+  --text3: #94A3B8;
+  --border: #E2E8F0;
+  --border2: #CBD5E1;
+  --green: #16A34A;
+  --green-bg: #F0FDF4;
+  --red: #DC2626;
+  --red-bg: #FFF1F2;
+  --amber: #D97706;
+  --amber-bg: #FFFBEB;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* NAV */
+.nav {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-right: 32px;
+}
+
+.nav-logo svg { width: 90px; }
+
+.nav-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border2);
+  margin-right: 32px;
+}
+
+.nav-pill {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  transition: all .15s;
+  margin-right: 4px;
+}
+
+.nav-pill:hover { background: var(--moova-xlight); color: var(--moova); }
+.nav-pill.active { background: var(--moova); color: white; }
+
+.nav-spacer { flex: 1; }
+
+.nav-badge {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--moova-xlight);
+  color: var(--moova);
+  border: 1px solid var(--moova-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: .05em;
+}
+
+/* LAYOUT */
+.page { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+
+/* CARDS */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.card-sub {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+/* STATS BAR */
+.stats-bar {
+  display: flex;
+  gap: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  flex: 1;
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-val {
+  font-family: 'Nunito', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.stat-val.blue { color: var(--moova); }
+.stat-val.green { color: var(--green); }
+.stat-val.red { color: var(--red); }
+.stat-val.amber { color: var(--amber); }
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--bg);
+  position: relative;
+}
+
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--moova);
+  background: var(--moova-xlight);
+}
+
+.upload-zone.loaded {
+  border-color: var(--green);
+  border-style: solid;
+  background: var(--green-bg);
+}
+
+.upload-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+
+.upload-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.upload-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.upload-sub {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: monospace;
+}
+
+.upload-filename {
+  font-size: 11px;
+  color: var(--green);
+  font-weight: 600;
+  margin-top: 6px;
+  font-family: monospace;
+}
+
+/* BUTTONS */
+.btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: .02em;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--moova);
+  color: white;
+}
+.btn-primary:hover { background: var(--moova-dark); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-outline:hover { border-color: var(--moova); color: var(--moova); }
+
+.btn-danger {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid #FECACA;
+}
+
+.btn-sm { padding: 6px 12px; font-size: 11px; }
+
+/* ALERTS */
+.alert {
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 12px;
+  border-left: 3px solid;
+  margin-bottom: 10px;
+}
+.alert-err { background: var(--red-bg); border-color: var(--red); color: #991B1B; }
+.alert-warn { background: var(--amber-bg); border-color: var(--amber); color: #92400E; }
+.alert-ok { background: var(--green-bg); border-color: var(--green); color: #166534; }
+.alert-info { background: var(--moova-xlight); border-color: var(--moova); color: #1E3A8A; }
+.alert-title { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+
+/* BADGE */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  letter-spacing: .03em;
+}
+.badge-ok { background: var(--green-bg); color: var(--green); border: 1px solid #BBF7D0; }
+.badge-err { background: var(--red-bg); color: var(--red); border: 1px solid #FECACA; }
+.badge-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid #FDE68A; }
+.badge-info { background: var(--moova-xlight); color: var(--moova); border: 1px solid var(--moova-light); }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+thead th {
+  font-family: 'Nunito', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text3);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  background: var(--bg);
+}
+
+thead th.num { text-align: right; }
+
+.thead-group th {
+  font-size: 9px;
+  color: var(--moova);
+  font-weight: 700;
+  background: var(--moova-xlight);
+  padding: 4px 10px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--bg); }
+tbody tr.row-err { background: #FFF5F5; }
+tbody tr.row-err:hover { background: #FEE2E2; }
+tbody tr.row-warn { background: #FFFDF0; }
+
+td {
+  padding: 9px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+td.name { font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+td.num { text-align: right; font-family: monospace; font-size: 11px; }
+td.muted { color: var(--text3); }
+td.ok { color: var(--green); font-weight: 600; }
+td.err { color: var(--red); font-weight: 700; }
+td.warn { color: var(--amber); font-weight: 600; }
+td.info { color: var(--moova); font-weight: 600; }
+
+.tot-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--border2);
+  background: var(--bg);
+}
+
+/* FORM */
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; margin-bottom: 10px; }
+
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+
+label { font-size: 11px; font-weight: 600; color: var(--text2); }
+
+input, select, textarea {
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  background: white;
+  transition: border .15s;
+  width: 100%;
+}
+
+input:focus, select:focus { outline: none; border-color: var(--moova); box-shadow: 0 0 0 3px var(--moova-light); }
+
+/* STUDIO MSG */
+.studio-msg {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+.studio-msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.studio-msg-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.studio-msg-text {
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: monospace;
+  color: var(--text);
+}
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.tab-btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all .15s;
+  letter-spacing: .02em;
+}
+.tab-btn.active { color: var(--moova); border-bottom-color: var(--moova); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* LOADER */
+.loader {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--moova);
+  font-weight: 600;
+}
+.loader.visible { display: flex; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--moova-light);
+  border-top-color: var(--moova);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* MANUAL ROWS */
+.manual-table { width: 100%; }
+.manual-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+
+/* SECTION TITLE */
+.section-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+
+/* DIFF DETAIL */
+.diff-box {
+  background: #FFF5F5;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.diff-box-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 10px;
+}
+.diff-item { border-bottom: 1px solid #FECACA; padding: 8px 0; font-size: 12px; }
+.diff-item:last-child { border-bottom: none; padding-bottom: 0; }
+.diff-item-name { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.diff-item-detail { color: var(--text2); font-size: 11px; }
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .stats-bar { flex-wrap: wrap; }
+  .stat-item { flex: 1 1 45%; }
+  .nav { padding: 0 12px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <svg viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Logo MOOVA simplificado en SVG -->
+      <text x="0" y="46" font-family="Nunito" font-weight="900" font-size="48" fill="#2563EB">MOOVA</text>
+    </svg>
+  </a>
+  <div class="nav-divider"></div>
+  <a href="/" class="nav-pill {% if request.path == '/' %}active{% endif %}">🏠 Inicio</a>
+  <a href="/ar" class="nav-pill {% if '/ar' in request.path %}active{% endif %}">🇦🇷 Argentina</a>
+  <a href="/mx" class="nav-pill {% if '/mx' in request.path %}active{% endif %}">🇲🇽 México</a>
+  <a href="/metrics" class="nav-pill {% if '/metrics' in request.path %}active{% endif %}">📊 Métricas</a>
+  <div class="nav-spacer"></div>
+  <div class="nav-badge">Payroll Hub</div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<script>
+// Utilidades globales
+function fmt(n, d=0) {
+  if (n === null || n === undefined || n === '') return '—';
+  return Number(n).toLocaleString('es-AR', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+
+function copyText(elId, btn) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  });
+}
+
+function switchTab(group, tab) {
+  document.querySelectorAll(`[data-tab-group="${group}"]`).forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.querySelectorAll(`[data-tab-btn-group="${group}"]`).forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+}
+
+// Drag & drop para upload zones
+document.querySelectorAll('.upload-zone').forEach(zone => {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const input = zone.querySelector('input[type=file]');
+    if (input && e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+});
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
