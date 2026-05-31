@@ -177,6 +177,9 @@ def export_ar_control(results, periodo):
 
 
 def export_mx_novedades(colabs, periodo, manuales=None):
+    # Extraer otras novedades si vienen dentro de colabs
+    otras_novedades = colabs.pop('__otras_novedades__', manuales or [])
+    colabs_clean = {k: v for k, v in colabs.items() if not k.startswith('__')}
     """
     Genera Excel para enviar al estudio MX con 3 hojas:
     1. Novedades - Incidencias: detalle por dia corregido LFT
@@ -212,7 +215,7 @@ def export_mx_novedades(colabs, periodo, manuales=None):
     contador = 1
     resumen_data = {}  # para hoja resumen
 
-    for nombre, d in colabs.items():
+    for nombre, d in colabs_clean.items():
         filas = d.get('filas', [])
         hasErr = any(a.get('tipo') == 'err' for a in d.get('alertas', []))
 
@@ -378,8 +381,8 @@ def export_mx_novedades(colabs, periodo, manuales=None):
         c.alignment = CENTER; c.border = BORDER
 
     # Cargar manuales si los hay
-    if manuales:
-        for ri, m in enumerate(manuales, 3):
+    if otras_novedades:
+        for ri, m in enumerate(otras_novedades, 3):
             tipo = m.get('tipo', '')
             tipo_label = {
                 'bono': 'Bono / Gratificación',
