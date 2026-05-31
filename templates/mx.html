@@ -154,7 +154,6 @@ let mxNovData = null;
 let mxCtrlResults = [];
 let mxPeriodo = '';
 let manualRowsMX = [];
-let mxOtrasNovedades = [];
 
 // ── NOVEDADES ──
 async function handleMxOps(input) {
@@ -174,7 +173,6 @@ async function handleMxOps(input) {
     if (data.success) {
       mxNovData = data.colabs;
       mxPeriodo = data.periodo;
-      mxOtrasNovedades = data.otras_novedades || [];
       renderMxNovStats(data.colabs);
       renderMxNovAlerts(data.colabs);
       renderCorreccionesLFT(data.correcciones_lft || []);
@@ -275,18 +273,10 @@ function renderMxNovTable(colabs, periodo) {
 
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  // Leer TODOS los manuales del formulario
-  const todosLosManuales = getMxManualData();
-  const tipos_otras = ['bono', 'vacaciones', 'ausencia', 'cambio_sueldo'];
-  const otrasNovedades = todosLosManuales.filter(m => tipos_otras.includes(m.tipo));
-  console.log('Manuales totales:', todosLosManuales);
-  console.log('Otras novedades a exportar:', otrasNovedades);
-  const payload = { colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otrasNovedades };
-  console.log('Payload:', JSON.stringify(payload).substring(0, 200));
   const res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo })
   });
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -310,28 +300,22 @@ function addManualRowMX() {
     </div>
     <div class="form-group">
       <label>Tipo</label>
-      <select data-id="${id}" data-field="tipo" onchange="updateManualLabel(this, ${id})">
-        <optgroup label="Incidencias (van a Novedades)">
-          <option value="heDoble">HE Doble</option>
-          <option value="heTriple">HE Triple</option>
-          <option value="heDom">HE Dominical</option>
-          <option value="diasDesc">Días Descanso</option>
-        </optgroup>
-        <optgroup label="Otras novedades (van a hoja separada)">
-          <option value="bono">Bono / Gratificación</option>
-          <option value="vacaciones">Vacaciones</option>
-          <option value="ausencia">Ausencia / Incidencia</option>
-          <option value="cambio_sueldo">Cambio de sueldo</option>
-        </optgroup>
+      <select data-id="${id}" data-field="tipo">
+        <option value="heDoble">HE Doble</option>
+        <option value="heTriple">HE Triple</option>
+        <option value="heDom">HE Dominical</option>
+        <option value="diasDesc">Días Descanso</option>
+        <option value="bono">Bono</option>
+        <option value="ausencia">Ausencia/Incidencia</option>
       </select>
     </div>
     <div class="form-group">
-      <label id="lbl-valor-${id}">Horas / Días</label>
-      <input type="text" placeholder="0" data-id="${id}" data-field="valor">
+      <label>Horas / Días</label>
+      <input type="number" placeholder="0" data-id="${id}" data-field="valor">
     </div>
     <div class="form-group">
-      <label>Detalle</label>
-      <input type="text" placeholder="Descripción o monto" data-id="${id}" data-field="comentarios">
+      <label>Comentario</label>
+      <input type="text" placeholder="Opcional" data-id="${id}" data-field="comentarios">
     </div>
     <button class="btn btn-danger btn-sm" style="margin-top:18px" onclick="removeMxRow(${id})">✕</button>
   `;
@@ -559,17 +543,6 @@ function generarResumenOPS(porNombre) {
   });
   lineas.push('Por favor tener en cuenta para los próximos envíos. Saludos,','Juan');
   return lineas.join('\n');
-}
-
-function updateManualLabel(sel, id) {
-  const tipo = sel.value;
-  const lbl = document.getElementById('lbl-valor-' + id);
-  if (!lbl) return;
-  const labels = {
-    'heDoble': 'Horas', 'heTriple': 'Horas', 'heDom': 'Horas', 'diasDesc': 'Días',
-    'bono': 'Monto (MXN)', 'vacaciones': 'Días', 'ausencia': 'Días', 'cambio_sueldo': 'Nuevo sueldo'
-  };
-  lbl.textContent = labels[tipo] || 'Valor';
 }
 </script>
 {% endblock %}
