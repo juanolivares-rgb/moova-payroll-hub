@@ -132,9 +132,16 @@ def mx_novedades():
         return jsonify({'error': 'Falta archivo de OPS'}), 400
     try:
         manuales_data = json.loads(manuales)
-        colabs, periodo, tope, correcciones_lft = parse_mx_ops(ops_file, manuales_data)
+        # Separar manuales: incidencias van al parser LFT, otras van directo al export
+        tipos_incidencia = {'heDoble', 'heTriple', 'heDom', 'diasDesc'}
+        manuales_incid = [m for m in manuales_data if m.get('tipo') in tipos_incidencia]
+        manuales_otras = [m for m in manuales_data if m.get('tipo') not in tipos_incidencia]
+        colabs, periodo, tope, correcciones_lft = parse_mx_ops(ops_file, manuales_incid)
+        # Guardar otras novedades en colabs para el export
+        colabs['__otras_novedades__'] = manuales_otras
         return jsonify({'success': True, 'periodo': periodo, 'tope': tope,
-                        'colabs': colabs, 'correcciones_lft': correcciones_lft})
+                        'colabs': colabs, 'correcciones_lft': correcciones_lft,
+                        'otras_novedades': manuales_otras})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
