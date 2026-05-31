@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+{% block title %}MOOVA · Argentina{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:24px">
+    <div class="section-title">🇦🇷 Argentina</div>
+    <div class="section-sub">Novedades OPS · Control de liquidación · Respuestas a empleados</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab-btn-group="ar" data-tab="novedades" onclick="switchTab('ar','novedades')">1 · Novedades OPS</button>
+    <button class="tab-btn" data-tab-btn-group="ar" data-tab="control" onclick="switchTab('ar','control')">2 · Control liquidación</button>
+    <button class="tab-btn" data-tab-btn-group="ar" data-tab="empleados" onclick="switchTab('ar','empleados')">3 · Respuestas empleados</button>
+  </div>
+
+  <!-- ── TAB 1: NOVEDADES OPS ── -->
+  <div class="tab-content active" data-tab-group="ar" data-tab="novedades">
+    <div class="grid-2" style="margin-bottom:20px">
+
+      <!-- Upload Excel -->
+      <div class="card">
+        <div class="card-title">📋 Subir novedades de OPS</div>
+        <div class="card-sub">Excel o imagen que te manda el área de Operaciones</div>
+        <div class="upload-zone" id="ops-excel-zone">
+          <input type="file" accept=".xlsx,.xls" id="ops-excel-input" onchange="handleOpsExcel(this)">
+          <span class="upload-icon">📊</span>
+          <div class="upload-label">Excel de OPS</div>
+          <div class="upload-sub">Arrastrá o hacé clic</div>
+          <div class="upload-filename" id="ops-excel-name"></div>
+        </div>
+      </div>
+
+      <!-- Upload Imagen -->
+      <div class="card">
+        <div class="card-title">📷 O subir imagen / captura</div>
+        <div class="card-sub">Claude extrae los datos automáticamente con IA</div>
+        <div class="upload-zone" id="ops-img-zone">
+          <input type="file" accept="image/*" id="ops-img-input" onchange="handleOpsImg(this)">
+          <span class="upload-icon">🖼️</span>
+          <div class="upload-label">Imagen de OPS</div>
+          <div class="upload-sub">PNG, JPG, captura de pantalla</div>
+          <div class="upload-filename" id="ops-img-name"></div>
+        </div>
+        <div class="loader" id="img-loader" style="margin-top:12px">
+          <div class="spinner"></div> Claude está leyendo la imagen...
+        </div>
+      </div>
+    </div>
+
+    <!-- Novedades manuales -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">✏️ Novedades manuales</div>
+      <div class="card-sub">Agregá bonos, HH.EE adicionales, cambios de sueldo o ausencias que no vienen de OPS</div>
+      <div id="manual-rows-ar"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="addManualRowAR()">+ Agregar novedad</button>
+    </div>
+
+    <!-- Tabla novedades OPS -->
+    <div id="ops-table-section" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div class="card-title">Novedades consolidadas</div>
+            <div class="card-sub" id="ops-periodo-label"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="generarParaEstudio()">↓ Generar Excel para HR Strategy</button>
+        </div>
+        <div class="table-wrap" id="ops-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 2: CONTROL LIQUIDACIÓN ── -->
+  <div class="tab-content" data-tab-group="ar" data-tab="control">
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">📋 Novedades MOOVA</div>
+        <div class="card-sub">El archivo que enviaste al estudio</div>
+        <div class="upload-zone" id="ctrl-nov-zone">
+          <input type="file" accept=".xlsx,.xls" id="ctrl-nov-input" onchange="handleCtrlFile('nov',this)">
+          <span class="upload-icon">📋</span>
+          <div class="upload-label">Novedades MOOVA</div>
+          <div class="upload-sub">MOOVA_Novedades_MM_YYYY.xlsx</div>
+          <div class="upload-filename" id="ctrl-nov-name"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Liquidación del estudio</div>
+        <div class="card-sub">Preliquidación que te mandó HR Strategy</div>
+        <div class="upload-zone" id="ctrl-liq-zone">
+          <input type="file" accept=".xlsx,.xls" id="ctrl-liq-input" onchange="handleCtrlFile('liq',this)">
+          <span class="upload-icon">📊</span>
+          <div class="upload-label">Preliquidación HR Strategy</div>
+          <div class="upload-sub">Moova_Detalle_Liquidacion_MM_YYYY.xlsx</div>
+          <div class="upload-filename" id="ctrl-liq-name"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px">
+      <button class="btn btn-primary" id="ctrl-run-btn" disabled onclick="runControl()">Ejecutar control →</button>
+      <div class="loader" id="ctrl-loader">
+        <div class="spinner"></div> Procesando...
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div id="ctrl-stats" style="display:none" class="stats-bar" style="margin-bottom:20px">
+      <div class="stat-item"><div class="stat-val blue" id="s-total">0</div><div class="stat-label">Empleados</div></div>
+      <div class="stat-item"><div class="stat-val green" id="s-ok">0</div><div class="stat-label">OK</div></div>
+      <div class="stat-item"><div class="stat-val red" id="s-diff">0</div><div class="stat-label">Con diferencia</div></div>
+      <div class="stat-item"><div class="stat-val" id="s-neto" style="color:var(--text)">$0</div><div class="stat-label">Neto total</div></div>
+      <div class="stat-item"><div class="stat-val red" id="s-dif-total">$0</div><div class="stat-label">Diferencia total</div></div>
+    </div>
+
+    <!-- Alertas diferencias -->
+    <div id="ctrl-alerts"></div>
+
+    <!-- Mensaje estudio -->
+    <div id="ctrl-studio-msg" style="display:none" class="studio-msg">
+      <div class="studio-msg-header">
+        <div class="studio-msg-label">✍️ Mensaje para HR Strategy (generado con IA)</div>
+        <button class="btn btn-outline btn-sm" onclick="copyText('studio-msg-text',this)">Copiar</button>
+      </div>
+      <div class="loader" id="msg-loader" style="margin-bottom:8px">
+        <div class="spinner"></div> Claude está redactando el mensaje...
+      </div>
+      <div class="studio-msg-text" id="studio-msg-text"></div>
+    </div>
+
+    <!-- Tabla control -->
+    <div id="ctrl-table-section" style="display:none" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title">Detalle por empleado</div>
+        <button class="btn btn-outline btn-sm" onclick="exportControl()">↓ Exportar reporte</button>
+      </div>
+      <div class="table-wrap" id="ctrl-table"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB 3: RESPUESTAS EMPLEADOS ── -->
+  <div class="tab-content" data-tab-group="ar" data-tab="empleados">
+    <div class="card" style="max-width:640px">
+      <div class="card-title">💬 Generador de respuestas para empleados</div>
+      <div class="card-sub">Pegá los datos del recibo y la consulta del colaborador — Claude redacta la respuesta</div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del empleado</label>
+            <input type="text" id="emp-nombre" placeholder="Apellido, Nombre">
+          </div>
+          <div class="form-group">
+            <label>Período</label>
+            <input type="text" id="emp-periodo" placeholder="04/2026">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sueldo básico ($)</label>
+            <input type="number" id="emp-sueldo" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>HH.EE 50% (hs)</label>
+            <input type="number" id="emp-he50hs" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>HH.EE 50% ($)</label>
+            <input type="number" id="emp-he50" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>HH.EE 100% (hs)</label>
+            <input type="number" id="emp-he100hs" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>HH.EE 100% ($)</label>
+            <input type="number" id="emp-he100" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Total remuneración ($)</label>
+            <input type="number" id="emp-totalrem" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Descuentos de ley ($)</label>
+            <input type="number" id="emp-descley" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Neto ($)</label>
+            <input type="number" id="emp-neto" placeholder="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Consulta del empleado</label>
+          <textarea id="emp-pregunta" rows="3" placeholder="Ej: No entiendo por qué mi neto bajó este mes..."></textarea>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="generarRespuesta()">✨ Generar respuesta</button>
+        </div>
+      </div>
+
+      <div id="resp-loader" class="loader" style="margin-top:16px">
+        <div class="spinner"></div> Claude está redactando la respuesta...
+      </div>
+
+      <div id="resp-result" style="display:none;margin-top:16px" class="studio-msg">
+        <div class="studio-msg-header">
+          <div class="studio-msg-label">Respuesta para el empleado</div>
+          <button class="btn btn-outline btn-sm" onclick="copyText('resp-text',this)">Copiar</button>
+        </div>
+        <div class="studio-msg-text" id="resp-text"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Estado ──
+let opsData = null;
+let ctrlNov = null;
+let ctrlLiq = null;
+let ctrlResults = [];
+let ctrlPeriodo = '';
+let manualRowsAR = [];
+
+// ── NOVEDADES OPS ──
+function handleOpsExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('ops-excel-name').textContent = file.name;
+  document.getElementById('ops-excel-zone').classList.add('loaded');
+  // Por ahora mostrar tabla vacía — el procesamiento real es en el servidor
+  alert('Archivo cargado: ' + file.name + '\nFuncionalidad de procesamiento en desarrollo.');
+}
+
+async function handleOpsImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('ops-img-name').textContent = file.name;
+  document.getElementById('ops-img-zone').classList.add('loaded');
+  document.getElementById('img-loader').classList.add('visible');
+
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('country', 'ar');
+
+  try {
+    const res = await fetch('/api/extract-image', { method: 'POST', body: formData });
+    const data = await res.json();
+    document.getElementById('img-loader').classList.remove('visible');
+    if (data.success) {
+      renderOpsImgTable(data.data.registros);
+    } else {
+      alert('Error al procesar imagen: ' + data.error);
+    }
+  } catch (e) {
+    document.getElementById('img-loader').classList.remove('visible');
+    alert('Error: ' + e.message);
+  }
+}
+
+function renderOpsImgTable(registros) {
+  // Consolidar por nombre
+  const byName = {};
+  registros.forEach(r => {
+    const n = r.nombre;
+    if (!byName[n]) byName[n] = { nombre: n, he50: 0, he100: 0, filas: [] };
+    const dia = (r.dia_semana || '').toLowerCase();
+    const esFinde = ['sa','sab','do','dom','feriado'].some(x => dia.includes(x));
+    const hs = parseFloat(r.horas || 0);
+    if (esFinde) byName[n].he100 += hs;
+    else byName[n].he50 += hs;
+    byName[n].filas.push(r);
+  });
+
+  opsData = byName;
+  let html = '<table><thead><tr><th>Nombre</th><th class="num">HE 50% (hs)</th><th class="num">HE 100% (hs)</th><th class="num">Total HE</th></tr></thead><tbody>';
+  Object.values(byName).forEach(d => {
+    html += `<tr>
+      <td class="name">${d.nombre}</td>
+      <td class="num ${d.he50 ? 'info' : 'muted'}">${d.he50 || '—'}</td>
+      <td class="num ${d.he100 ? 'info' : 'muted'}">${d.he100 || '—'}</td>
+      <td class="num">${d.he50 + d.he100}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('ops-table').innerHTML = html;
+  document.getElementById('ops-table-section').style.display = 'block';
+}
+
+// ── MANUALES AR ──
+function addManualRowAR() {
+  const id = Date.now();
+  manualRowsAR.push(id);
+  const div = document.createElement('div');
+  div.className = 'manual-row';
+  div.id = 'mrow-' + id;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Legajo</label>
+      <input type="number" placeholder="Nro. legajo" data-id="${id}" data-field="legajo">
+    </div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <select data-id="${id}" data-field="tipo">
+        <option value="he50">HH.EE 50%</option>
+        <option value="he100">HH.EE 100%</option>
+        <option value="bono">Bono</option>
+        <option value="descuento">Descuento</option>
+        <option value="ausencia">Ausencia</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Valor / Horas</label>
+      <input type="number" placeholder="0" data-id="${id}" data-field="valor">
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <input type="text" placeholder="Opcional" data-id="${id}" data-field="descripcion">
+    </div>
+    <button class="btn btn-danger btn-sm" style="margin-top:18px" onclick="removeManualRow(${id})">✕</button>
+  `;
+  document.getElementById('manual-rows-ar').appendChild(div);
+}
+
+function removeManualRow(id) {
+  document.getElementById('mrow-' + id)?.remove();
+  manualRowsAR = manualRowsAR.filter(x => x !== id);
+}
+
+function getManualData() {
+  return manualRowsAR.map(id => {
+    const inputs = document.querySelectorAll(`[data-id="${id}"]`);
+    const obj = {};
+    inputs.forEach(el => { obj[el.dataset.field] = el.value; });
+    return obj;
+  }).filter(m => m.legajo);
+}
+
+function generarParaEstudio() {
+  alert('Funcionalidad de exportación en desarrollo. Por ahora podés usar el control de liquidación directamente.');
+}
+
+// ── CONTROL LIQUIDACIÓN ──
+function handleCtrlFile(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (type === 'nov') {
+    ctrlNov = file;
+    document.getElementById('ctrl-nov-name').textContent = file.name;
+    document.getElementById('ctrl-nov-zone').classList.add('loaded');
+  } else {
+    ctrlLiq = file;
+    document.getElementById('ctrl-liq-name').textContent = file.name;
+    document.getElementById('ctrl-liq-zone').classList.add('loaded');
+  }
+  if (ctrlNov && ctrlLiq) document.getElementById('ctrl-run-btn').disabled = false;
+}
+
+async function runControl() {
+  if (!ctrlNov || !ctrlLiq) return;
+  document.getElementById('ctrl-loader').classList.add('visible');
+  document.getElementById('ctrl-run-btn').disabled = true;
+
+  const formData = new FormData();
+  formData.append('novedades', ctrlNov);
+  formData.append('liquidacion', ctrlLiq);
+  formData.append('manuales', JSON.stringify(getManualData()));
+
+  try {
+    const res = await fetch('/api/ar/control', { method: 'POST', body: formData });
+    const data = await res.json();
+    document.getElementById('ctrl-loader').classList.remove('visible');
+    document.getElementById('ctrl-run-btn').disabled = false;
+
+    if (data.success) {
+      ctrlResults = data.results;
+      ctrlPeriodo = data.periodo;
+      renderCtrlStats(data.results);
+      renderCtrlAlerts(data.results, data.periodo);
+      renderCtrlTable(data.results);
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch (e) {
+    document.getElementById('ctrl-loader').classList.remove('visible');
+    document.getElementById('ctrl-run-btn').disabled = false;
+    alert('Error: ' + e.message);
+  }
+}
+
+function renderCtrlStats(results) {
+  const total = results.length;
+  const diffs = results.filter(r => Math.abs(r.dif) > 1);
+  const neto = results.reduce((s,r) => s+r.neto, 0);
+  const difTotal = results.reduce((s,r) => s+r.dif, 0);
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-ok').textContent = total - diffs.length;
+  document.getElementById('s-diff').textContent = diffs.length;
+  document.getElementById('s-neto').textContent = '$' + fmt(neto);
+  const sDif = document.getElementById('s-dif-total');
+  sDif.textContent = (difTotal >= 0 ? '+' : '') + '$' + fmt(difTotal);
+  sDif.className = 'stat-val ' + (Math.abs(difTotal) < 1 ? 'green' : 'red');
+
+  const statsEl = document.getElementById('ctrl-stats');
+  statsEl.style.display = 'flex';
+}
+
+function renderCtrlAlerts(results, periodo) {
+  const diffs = results.filter(r => Math.abs(r.dif) > 1);
+  const alertsEl = document.getElementById('ctrl-alerts');
+  alertsEl.innerHTML = '';
+
+  if (!diffs.length) {
+    alertsEl.innerHTML = '<div class="alert alert-ok"><div class="alert-title">✓ Sin diferencias</div>La liquidación coincide con las novedades MOOVA en todos los empleados.</div>';
+    return;
+  }
+
+  const items = diffs.map(r =>
+    `<div style="margin-top:4px">· <strong>${r.nombre}</strong> (Leg.${r.leg}) — Neto estudio $${fmt(r.neto)} · Neto MOOV $${fmt(r.netoMoov)} · <strong>Dif: ${r.dif > 0 ? '+' : ''}$${fmt(r.dif)}</strong></div>`
+  ).join('');
+  alertsEl.innerHTML = `<div class="alert alert-err"><div class="alert-title">🚨 ${diffs.length} empleado(s) con diferencia — requiere reliquidación</div>${items}</div>`;
+
+  // Generar mensaje con Claude
+  const studioEl = document.getElementById('ctrl-studio-msg');
+  studioEl.style.display = 'block';
+  document.getElementById('msg-loader').classList.add('visible');
+  document.getElementById('studio-msg-text').textContent = '';
+
+  fetch('/api/ar/mensaje-estudio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ diffs, periodo })
+  }).then(r => r.json()).then(data => {
+    document.getElementById('msg-loader').classList.remove('visible');
+    document.getElementById('studio-msg-text').textContent = data.mensaje || '';
+  }).catch(() => {
+    document.getElementById('msg-loader').classList.remove('visible');
+  });
+}
+
+function renderCtrlTable(results) {
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>Leg.</th><th>Nombre</th>
+        <th class="num">HE50%(hs)</th><th class="num">HE100%(hs)</th>
+        <th class="num">Val.Hora</th><th class="num">HE50%($)</th><th class="num">HE100%($)</th>
+        <th class="num">Sueldo</th><th class="num">Total Rem.</th>
+        <th class="num">Neto Est.</th><th class="num">Neto MOOV</th><th>Estado</th>
+      </tr>
+    </thead><tbody>`;
+
+  results.forEach(r => {
+    const hasDiff = Math.abs(r.dif) > 1;
+    const rc = hasDiff ? 'row-err' : '';
+    const badge = hasDiff
+      ? `<span class="badge badge-err">${r.dif > 0 ? '+' : ''}$${fmt(r.dif)}</span>`
+      : `<span class="badge badge-ok">OK</span>`;
+    html += `<tr class="${rc}">
+      <td class="muted">${r.leg}</td>
+      <td class="name">${r.nombre}</td>
+      <td class="num ${r.he50Hs ? 'info' : 'muted'}">${r.he50Hs || '—'}</td>
+      <td class="num ${r.he100Hs ? 'info' : 'muted'}">${r.he100Hs || '—'}</td>
+      <td class="num muted">$${fmt(r.vh, 2)}</td>
+      <td class="num ${r.he50c ? 'info' : 'muted'}">${r.he50c ? '$'+fmt(r.he50c) : '—'}</td>
+      <td class="num ${r.he100c ? 'info' : 'muted'}">${r.he100c ? '$'+fmt(r.he100c) : '—'}</td>
+      <td class="num">$${fmt(r.sueldo)}</td>
+      <td class="num">$${fmt(r.totalRem)}</td>
+      <td class="num">$${fmt(r.neto)}</td>
+      <td class="num">$${fmt(r.netoMoov)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  });
+
+  const totNeto = results.reduce((s,r) => s+r.neto, 0);
+  const totDif = results.reduce((s,r) => s+r.dif, 0);
+  html += `<tr class="tot-row">
+    <td></td><td>TOTALES</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+    <td class="num">$${fmt(totNeto)}</td><td></td>
+    <td class="${Math.abs(totDif)<1?'ok':'err'} num">${Math.abs(totDif)<1?'$0':(totDif>0?'+':'')+'$'+fmt(totDif)}</td>
+  </tr></tbody></table>`;
+
+  document.getElementById('ctrl-table').innerHTML = html;
+  document.getElementById('ctrl-table-section').style.display = 'block';
+}
+
+async function exportControl() {
+  const res = await fetch('/api/ar/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ results: ctrlResults, periodo: ctrlPeriodo })
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `AR-control-nomina-${ctrlPeriodo.replace('/','-')}.xlsx`;
+  a.click();
+}
+
+// ── RESPUESTAS EMPLEADOS ──
+async function generarRespuesta() {
+  const pregunta = document.getElementById('emp-pregunta').value.trim();
+  if (!pregunta) { alert('Ingresá la consulta del empleado'); return; }
+
+  const empleado = {
+    nombre: document.getElementById('emp-nombre').value,
+    sueldo: parseFloat(document.getElementById('emp-sueldo').value) || 0,
+    he50Hs: parseFloat(document.getElementById('emp-he50hs').value) || 0,
+    he50c: parseFloat(document.getElementById('emp-he50').value) || 0,
+    he100Hs: parseFloat(document.getElementById('emp-he100hs').value) || 0,
+    he100c: parseFloat(document.getElementById('emp-he100').value) || 0,
+    totalRem: parseFloat(document.getElementById('emp-totalrem').value) || 0,
+    descLey: parseFloat(document.getElementById('emp-descley').value) || 0,
+    neto: parseFloat(document.getElementById('emp-neto').value) || 0,
+  };
+
+  document.getElementById('resp-loader').classList.add('visible');
+  document.getElementById('resp-result').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ar/respuesta-empleado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empleado, pregunta })
+    });
+    const data = await res.json();
+    document.getElementById('resp-loader').classList.remove('visible');
+    document.getElementById('resp-text').textContent = data.respuesta || '';
+    document.getElementById('resp-result').style.display = 'block';
+  } catch (e) {
+    document.getElementById('resp-loader').classList.remove('visible');
+    alert('Error: ' + e.message);
+  }
+}
+</script>
+{% endblock %}
