@@ -1,6 +1,3 @@
-bash
-
-cat > /home/claude/moova_payroll/utils/mx_parser.py << 'PYEOF'
 from openpyxl import load_workbook
 import re
 from datetime import datetime
@@ -308,8 +305,3 @@ def run_mx_control(colabs, empleados):
         })
 
     return sorted(results, key=lambda x: (-x['hasDiff'], x['nombre']))
-PYEOF
-echo "mx_parser.py OK - $(wc -l < /home/claude/moova_payroll/utils/mx_parser.py) líneas"
-Salida
-
-mx_parser.py OK - 307 líneas
