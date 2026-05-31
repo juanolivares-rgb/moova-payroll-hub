@@ -52,7 +52,61 @@ def metrics():
     return render_template('metrics.html')
 
 # ── API: IMAGEN → CLAUDE VISION ─────────────────────────────
-@app.route('/api/extract-image', methods=['POST'])
+@app.route('/api/ar/export-novedades', methods=['POST'])
+def ar_export_novedades():
+    data = request.get_json()
+    novedades = data.get('novedades', {})
+    periodo = data.get('periodo', 'PERIODO')
+    
+    # Convertir formato imagen a formato exportable
+    rows = []
+    for nombre, d in novedades.items():
+        rows.append({
+            'nombre': nombre,
+            'he50': d.get('he50', 0),
+            'he100': d.get('he100', 0),
+            'totalHE': d.get('he50', 0) + d.get('he100', 0)
+        })
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    import tempfile
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Novedades HR Strategy'
+    
+    # Header
+    ws.merge_cells('A1:D1')
+    ws['A1'] = f'MOOVA · Novedades para HR Strategy · {periodo}'
+    ws['A1'].font = Font(bold=True, size=12, color='2563EB')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    headers = ['Apellido y Nombre', 'HH.EE 50% (hs)', 'HH.EE 100% (hs)', 'Total HH.EE']
+    blue_fill = PatternFill("solid", fgColor="2563EB")
+    for i, h in enumerate(headers, 1):
+        c = ws.cell(row=3, column=i, value=h)
+        c.font = Font(bold=True, color='FFFFFF', size=10)
+        c.fill = blue_fill
+        c.alignment = Alignment(horizontal='center')
+    
+    for ri, r in enumerate(rows, 4):
+        ws.cell(row=ri, column=1, value=r['nombre'])
+        ws.cell(row=ri, column=2, value=r['he50'] or '')
+        ws.cell(row=ri, column=3, value=r['he100'] or '')
+        ws.cell(row=ri, column=4, value=r['totalHE'])
+    
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 16
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 14
+    
+    tmp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+    wb.save(tmp.name)
+    
+    per = periodo.replace('/', '-') if periodo else 'PERIODO'
+    return send_file(tmp.name, as_attachment=True,
+                     download_name=f'AR-novedades-HR-Strategy-{per}.xlsx')
 def extract_image():
     if 'image' not in request.files:
         return jsonify({'error': 'No image uploaded'}), 400
