@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}MOOVA · Métricas{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:24px">
+    <div class="section-title">📊 Métricas históricas</div>
+    <div class="section-sub">Dashboard acumulativo · Se actualiza automáticamente con cada control procesado</div>
+  </div>
+
+  <div id="metrics-loading" style="text-align:center;padding:60px;color:var(--text2)">
+    <div class="spinner" style="margin:0 auto 12px;width:24px;height:24px;border-width:3px"></div>
+    Cargando métricas...
+  </div>
+
+  <div id="metrics-empty" style="display:none">
+    <div class="card" style="text-align:center;padding:60px;max-width:500px;margin:0 auto">
+      <div style="font-size:48px;margin-bottom:16px">📭</div>
+      <div class="card-title" style="margin-bottom:8px">Sin datos todavía</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        Las métricas se generan automáticamente cuando procesás controles de liquidación.<br><br>
+        Andá a <strong>Argentina</strong> o <strong>México</strong> y ejecutá un control para ver los datos acá.
+      </div>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
+        <a href="/ar" class="btn btn-primary btn-sm">🇦🇷 Ir a Argentina</a>
+        <a href="/mx" class="btn btn-outline btn-sm">🇲🇽 Ir a México</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="metrics-content" style="display:none">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab-btn-group="met" data-tab="heranking" onclick="switchTab('met','heranking')">🏆 Ranking HH.EE</button>
+      <button class="tab-btn" data-tab-btn-group="met" data-tab="tendencia" onclick="switchTab('met','tendencia')">📈 Tendencia nómina</button>
+      <button class="tab-btn" data-tab-btn-group="met" data-tab="compliance" onclick="switchTab('met','compliance')">⚠️ Compliance</button>
+      <button class="tab-btn" data-tab-btn-group="met" data-tab="diferencias" onclick="switchTab('met','diferencias')">🔍 Diferencias</button>
+    </div>
+
+    <!-- ── RANKING HH.EE ── -->
+    <div class="tab-content active" data-tab-group="met" data-tab="heranking">
+      <div class="grid-2">
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px">🇦🇷 Top HH.EE Argentina</div>
+          <div class="card-sub">Acumulado histórico por empleado</div>
+          <div class="table-wrap" id="ar-he-table"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px">🇲🇽 Top HH.EE México</div>
+          <div class="card-sub">Acumulado histórico por colaborador</div>
+          <div class="table-wrap" id="mx-he-table"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TENDENCIA NÓMINA ── -->
+    <div class="tab-content" data-tab-group="met" data-tab="tendencia">
+      <div class="grid-2">
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px">🇦🇷 Argentina · Evolución mensual</div>
+          <div class="card-sub">Neto total y HH.EE por período</div>
+          <div class="table-wrap" id="ar-trend-table"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px">🇲🇽 México · Evolución mensual</div>
+          <div class="card-sub">Neto total y HH.EE por período</div>
+          <div class="table-wrap" id="mx-trend-table"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── COMPLIANCE ── -->
+    <div class="tab-content" data-tab-group="met" data-tab="compliance">
+      <div class="card" style="max-width:700px">
+        <div class="card-title" style="margin-bottom:4px">🇲🇽 Alertas LFT recurrentes</div>
+        <div class="card-sub">Colaboradores con alertas en múltiples períodos</div>
+        <div class="table-wrap" id="mx-alertas-table"></div>
+      </div>
+    </div>
+
+    <!-- ── DIFERENCIAS ── -->
+    <div class="tab-content" data-tab-group="met" data-tab="diferencias">
+      <div class="card" style="max-width:700px">
+        <div class="card-title" style="margin-bottom:4px">🇦🇷 Empleados con más diferencias históricas</div>
+        <div class="card-sub">Casos que más frecuentemente requirieron reliquidación</div>
+        <div class="table-wrap" id="ar-diff-table"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadMetrics() {
+  try {
+    const res = await fetch('/api/metrics');
+    const data = await res.json();
+
+    document.getElementById('metrics-loading').style.display = 'none';
+
+    const hasData = (data.ar_trend && data.ar_trend.length > 0) ||
+                    (data.mx_trend && data.mx_trend.length > 0);
+
+    if (!hasData) {
+      document.getElementById('metrics-empty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('metrics-content').style.display = 'block';
+
+    // AR HH.EE ranking
+    if (data.ar_he_ranking && data.ar_he_ranking.length) {
+      let html = `<table><thead><tr>
+        <th>Empleado</th>
+        <th class="num">HE 50% (hs)</th>
+        <th class="num">HE 100% (hs)</th>
+        <th class="num">Total HE</th>
+        <th class="num">Períodos</th>
+      </tr></thead><tbody>`;
+      data.ar_he_ranking.forEach((r, i) => {
+        html += `<tr>
+          <td><span style="color:var(--text3);margin-right:8px">#${i+1}</span>${r.nombre}</td>
+          <td class="num info">${r.total_he50 || '—'}</td>
+          <td class="num info">${r.total_he100 || '—'}</td>
+          <td class="num" style="font-weight:700">${r.total_he}</td>
+          <td class="num muted">${r.periodos}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('ar-he-table').innerHTML = html;
+    } else {
+      document.getElementById('ar-he-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin datos de HH.EE Argentina todavía.</p>';
+    }
+
+    // MX HH.EE ranking
+    if (data.mx_he_ranking && data.mx_he_ranking.length) {
+      let html = `<table><thead><tr>
+        <th>Colaborador</th>
+        <th class="num">HE Doble</th>
+        <th class="num">HE Triple</th>
+        <th class="num">Total HE</th>
+        <th class="num">Períodos</th>
+      </tr></thead><tbody>`;
+      data.mx_he_ranking.forEach((r, i) => {
+        html += `<tr>
+          <td><span style="color:var(--text3);margin-right:8px">#${i+1}</span>${r.nombre}</td>
+          <td class="num info">${r.total_doble || '—'}</td>
+          <td class="num info">${r.total_triple || '—'}</td>
+          <td class="num" style="font-weight:700">${r.total_he}</td>
+          <td class="num muted">${r.periodos}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('mx-he-table').innerHTML = html;
+    } else {
+      document.getElementById('mx-he-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin datos de HH.EE México todavía.</p>';
+    }
+
+    // AR tendencia
+    if (data.ar_trend && data.ar_trend.length) {
+      let html = `<table><thead><tr>
+        <th>Período</th>
+        <th class="num">Empleados</th>
+        <th class="num">HE 50% (hs)</th>
+        <th class="num">HE 100% (hs)</th>
+        <th class="num">Neto total</th>
+        <th class="num">Diferencias</th>
+      </tr></thead><tbody>`;
+      [...data.ar_trend].reverse().forEach(r => {
+        const hasDiff = r.con_diferencia > 0;
+        html += `<tr>
+          <td style="font-weight:600">${r.periodo}</td>
+          <td class="num">${r.total_empleados}</td>
+          <td class="num ${r.total_he50 > 0 ? 'info' : 'muted'}">${r.total_he50 || '—'}</td>
+          <td class="num ${r.total_he100 > 0 ? 'info' : 'muted'}">${r.total_he100 || '—'}</td>
+          <td class="num">$${fmt(r.neto_total)}</td>
+          <td class="num ${hasDiff ? 'err' : 'ok'}">${hasDiff ? r.con_diferencia + ' ⚠' : '✓ OK'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('ar-trend-table').innerHTML = html;
+    } else {
+      document.getElementById('ar-trend-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin datos de Argentina todavía.</p>';
+    }
+
+    // MX tendencia
+    if (data.mx_trend && data.mx_trend.length) {
+      let html = `<table><thead><tr>
+        <th>Período</th>
+        <th class="num">Colabs</th>
+        <th class="num">HE Dobles</th>
+        <th class="num">HE Triples</th>
+        <th class="num">Neto MXN</th>
+        <th class="num">Alertas LFT</th>
+      </tr></thead><tbody>`;
+      [...data.mx_trend].reverse().forEach(r => {
+        html += `<tr>
+          <td style="font-weight:600">${r.periodo}</td>
+          <td class="num">${r.total_colabs}</td>
+          <td class="num ${r.total_he_doble > 0 ? 'info' : 'muted'}">${r.total_he_doble || '—'}</td>
+          <td class="num ${r.total_he_triple > 0 ? 'info' : 'muted'}">${r.total_he_triple || '—'}</td>
+          <td class="num">$${fmt(r.neto_total)}</td>
+          <td class="num ${r.alertas_lft > 0 ? 'warn' : 'ok'}">${r.alertas_lft > 0 ? r.alertas_lft + ' ⚠' : '✓ OK'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('mx-trend-table').innerHTML = html;
+    } else {
+      document.getElementById('mx-trend-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin datos de México todavía.</p>';
+    }
+
+    // MX alertas recurrentes
+    if (data.mx_alertas && data.mx_alertas.length) {
+      let html = `<table><thead><tr>
+        <th>Colaborador</th>
+        <th class="num">Alertas totales</th>
+        <th class="num">Períodos procesados</th>
+      </tr></thead><tbody>`;
+      data.mx_alertas.forEach(r => {
+        html += `<tr class="row-warn">
+          <td class="name">${r.nombre}</td>
+          <td class="num warn" style="font-weight:700">${r.total_alertas}</td>
+          <td class="num muted">${r.periodos}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('mx-alertas-table').innerHTML = html;
+    } else {
+      document.getElementById('mx-alertas-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin alertas LFT registradas todavía.</p>';
+    }
+
+    // AR diferencias históricas
+    if (data.ar_diff_ranking && data.ar_diff_ranking.length) {
+      let html = `<table><thead><tr>
+        <th>Empleado</th>
+        <th class="num">Períodos con diferencia</th>
+        <th class="num">Diferencia acumulada</th>
+      </tr></thead><tbody>`;
+      data.ar_diff_ranking.forEach(r => {
+        html += `<tr class="row-err">
+          <td class="name">${r.nombre}</td>
+          <td class="num err" style="font-weight:700">${r.periodos_con_diff}</td>
+          <td class="num err">$${fmt(r.dif_acum)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('ar-diff-table').innerHTML = html;
+    } else {
+      document.getElementById('ar-diff-table').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:12px 0">Sin diferencias históricas registradas. ✓</p>';
+    }
+
+  } catch (e) {
+    document.getElementById('metrics-loading').innerHTML = '<p style="color:var(--red)">Error al cargar métricas: ' + e.message + '</p>';
+  }
+}
+
+loadMetrics();
+</script>
+{% endblock %}
