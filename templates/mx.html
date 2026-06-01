@@ -225,7 +225,7 @@ function renderMxNovStats(colabs) {
 function renderMxNovAlerts(colabs) {
   const alertsEl = document.getElementById('mx-nov-alerts');
   alertsEl.innerHTML = '';
-  Object.entries(colabs).forEach(([nombre, d]) => {
+  Object.entries(colabs).filter(([nombre]) => !nombre.startsWith('__')).forEach(([nombre, d]) => {
     if (!d.alertas || !d.alertas.length) return;
     d.alertas.forEach(a => {
       alertsEl.innerHTML += `<div class="alert alert-${a.tipo}">
@@ -246,7 +246,7 @@ function renderMxNovTable(colabs, periodo) {
     <th>Comentarios</th><th>Estado</th>
   </tr></thead><tbody>`;
 
-  Object.entries(colabs).forEach(([nombre, d]) => {
+  Object.entries(colabs).filter(([nombre]) => !nombre.startsWith('__')).forEach(([nombre, d]) => {
     const totalHE = (d.heDoble||0) + (d.heTriple||0) + (d.heDom||0) + (d.heFest||0);
     const hasErr = d.alertas && d.alertas.some(a => a.tipo === 'err');
     const hasWarn = d.alertas && d.alertas.some(a => a.tipo === 'warn');
