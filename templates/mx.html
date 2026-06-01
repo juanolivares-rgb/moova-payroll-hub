@@ -299,7 +299,7 @@ async function handleMxOps(input) {
 
   const formData = new FormData();
   formData.append('ops', file);
-  formData.append('manuales', JSON.stringify(getMxManualData()));
+  formData.append('manuales', JSON.stringify([]));
 
   try {
     const res = await fetch('/api/mx/novedades', { method: 'POST', body: formData });
@@ -479,13 +479,11 @@ function capturarManualesMX() {
   mxOtrasNovedades = todos.filter(m => tipos_otras.includes(m.tipo));
 }
 
+let mxManualData = [];
+
 function getMxManualData() {
-  // Retornar directamente desde el array interno (más confiable que leer el DOM)
   return mxManualData || [];
 }
-
-// Array interno que guarda los manuales como objetos
-let mxManualData = [];
 
 function syncManualData() {
   mxManualData = [];
@@ -531,7 +529,7 @@ async function runMxControl() {
   if (mxCtrlOpsFile) formData.append('ops', mxCtrlOpsFile);
   else if (mxOpsFile) formData.append('ops', mxOpsFile);
   formData.append('nomina', mxNomFile);
-  formData.append('manuales', JSON.stringify(getMxManualData()));
+  formData.append('manuales', JSON.stringify([]));
 
   try {
     const res = await fetch('/api/mx/control', { method: 'POST', body: formData });
