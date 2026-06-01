@@ -42,6 +42,33 @@
       </div>
     </div>
 
+
+
+    <!-- Stats novedades -->
+    <div id="mx-nov-stats" style="display:none" class="stats-bar" style="margin-bottom:20px">
+      <div class="stat-item"><div class="stat-val blue" id="mx-s-total">0</div><div class="stat-label">Colaboradores</div></div>
+      <div class="stat-item"><div class="stat-val green" id="mx-s-ok">0</div><div class="stat-label">Sin alertas</div></div>
+      <div class="stat-item"><div class="stat-val red" id="mx-s-alertas">0</div><div class="stat-label">Alertas LFT</div></div>
+    </div>
+
+    <!-- Alertas LFT -->
+    <div id="mx-nov-alerts" style="margin-bottom:16px"></div>
+
+    <!-- Panel correcciones LFT -->
+    <div id="mx-lft-panel" style="margin-bottom:16px"></div>
+
+    <!-- Tabla novedades -->
+    <div id="mx-nov-table-section" style="display:none" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <div class="card-title">Novedades consolidadas</div>
+          <div class="card-sub" id="mx-nov-periodo"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="exportMxNov()">↓ Generar archivo para estudio</button>
+      </div>
+      <div class="table-wrap" id="mx-nov-table"></div>
+
+
     <!-- Otras novedades: formulario estático simple -->
     <div class="card" style="margin-bottom:20px">
       <div class="card-title">✏️ Otras novedades <span style="font-size:11px;font-weight:400;color:var(--text3)">(bonos, vacaciones, ausencias — van a hoja separada del Excel)</span></div>
@@ -179,30 +206,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Stats novedades -->
-    <div id="mx-nov-stats" style="display:none" class="stats-bar" style="margin-bottom:20px">
-      <div class="stat-item"><div class="stat-val blue" id="mx-s-total">0</div><div class="stat-label">Colaboradores</div></div>
-      <div class="stat-item"><div class="stat-val green" id="mx-s-ok">0</div><div class="stat-label">Sin alertas</div></div>
-      <div class="stat-item"><div class="stat-val red" id="mx-s-alertas">0</div><div class="stat-label">Alertas LFT</div></div>
-    </div>
-
-    <!-- Alertas LFT -->
-    <div id="mx-nov-alerts" style="margin-bottom:16px"></div>
-
-    <!-- Panel correcciones LFT -->
-    <div id="mx-lft-panel" style="margin-bottom:16px"></div>
-
-    <!-- Tabla novedades -->
-    <div id="mx-nov-table-section" style="display:none" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div>
-          <div class="card-title">Novedades consolidadas</div>
-          <div class="card-sub" id="mx-nov-periodo"></div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="exportMxNov()">↓ Generar archivo para estudio</button>
-      </div>
-      <div class="table-wrap" id="mx-nov-table"></div>
     </div>
   </div>
 
