@@ -65,134 +65,11 @@
         <button class="btn btn-primary btn-sm" onclick="exportMxNov()">↓ Generar archivo para estudio</button>
       </div>
       <div class="table-wrap" id="mx-nov-table"></div>
-    </div>
-
-    <!-- Otras novedades: HTML estático puro -->
-    <div id="otras-nov-section" style="display:none" class="card">
-      <div class="card-title">✏️ Otras novedades <span style="font-size:11px;font-weight:400;color:var(--text3)">(bonos, vacaciones, ausencias)</span></div>
-      <div class="card-sub">Se incluyen en hoja separada del Excel para el estudio</div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Colaborador</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Tipo</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Monto / Días</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_0" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_0" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_0" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_0" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_1" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_1" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_1" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_1" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_2" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_2" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_2" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_2" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_3" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_3" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_3" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_3" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_4" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_4" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_4" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_4" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_5" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_5" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_5" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_5" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_6" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_6" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_6" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_6" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_7" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_7" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_7" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_7" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_8" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_8" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_8" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_8" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px"><input type="text" id="on_n_9" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><select id="on_t_9" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
-            <option value="bono">Bono / Gratificación</option>
-            <option value="vacaciones">Vacaciones</option>
-            <option value="ausencia">Ausencia</option>
-            <option value="cambio_sueldo">Cambio de sueldo</option>
-          </select></td>
-          <td style="padding:4px 6px"><input type="text" id="on_v_9" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-          <td style="padding:4px 6px"><input type="text" id="on_d_9" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
-        </tr>
-        </tbody>
-      </table>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        <button class="btn btn-outline btn-sm" onclick="agregarFilaManual()">+ Agregar novedad manual</button>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">Bonos, vacaciones, ausencias, cambios de sueldo</span>
+      </div>
+      <div id="filas-manuales-tabla" style="margin-top:8px"></div>
     </div>
 
   </div>
@@ -328,7 +205,7 @@ async function handleMxOps(input) {
       renderMxNovAlerts(data.colabs);
       renderCorreccionesLFT(data.correcciones_lft || []);
       renderMxNovTable(data.colabs, data.periodo);
-      document.getElementById('otras-nov-section').style.display = 'block';
+
     } else {
       alert('Error: ' + data.error);
     }
@@ -457,13 +334,52 @@ function renderMxNovTable(colabs, periodo) {
 }
 
 // ── EXPORT NOVEDADES ───────────────────────────────────────
+var filasManualCount = 0;
+
+function agregarFilaManual() {
+  var i = filasManualCount++;
+  var container = document.getElementById('filas-manuales-tabla');
+  var div = document.createElement('div');
+  div.id = 'fila-manual-' + i;
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1.5fr 1fr 1.5fr auto;gap:6px;margin-bottom:6px;align-items:center';
+  div.innerHTML =
+    '<input type="text" id="fm_n_'+i+'" placeholder="Nombre colaborador" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
+    '<select id="fm_t_'+i+'" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
+      '<option value="bono">Bono / Gratificación</option>' +
+      '<option value="vacaciones">Vacaciones</option>' +
+      '<option value="ausencia">Ausencia</option>' +
+      '<option value="cambio_sueldo">Cambio de sueldo</option>' +
+    '</select>' +
+    '<input type="text" id="fm_v_'+i+'" placeholder="Monto / Días" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
+    '<input type="text" id="fm_d_'+i+'" placeholder="Detalle" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
+    '<button onclick="document.getElementById('fila-manual-'+i+'').remove()" style="background:var(--red-bg);color:var(--red);border:1px solid #FECACA;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px">✕</button>';
+  container.appendChild(div);
+}
+
+function getFilasManuales() {
+  var result = [];
+  for (var i = 0; i < filasManualCount; i++) {
+    var n = document.getElementById('fm_n_' + i);
+    if (!n || !n.value.trim()) continue;
+    var t = document.getElementById('fm_t_' + i);
+    var v = document.getElementById('fm_v_' + i);
+    var d = document.getElementById('fm_d_' + i);
+    result.push({
+      nombre: n.value.trim(),
+      tipo: t ? t.value : 'bono',
+      valor: v ? v.value.trim() : '',
+      comentarios: d ? d.value.trim() : ''
+    });
+  }
+  return result;
+}
+
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  var otras = getOtrasNovedades();
   var res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otras })
+    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: getFilasManuales() })
   });
   var blob = await res.blob();
   var url = URL.createObjectURL(blob);
