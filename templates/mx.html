@@ -352,7 +352,7 @@ function agregarFilaManual() {
     '</select>' +
     '<input type="text" id="fm_v_'+i+'" placeholder="Monto / Días" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
     '<input type="text" id="fm_d_'+i+'" placeholder="Detalle" style="border:1px solid #CBD5E1;border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit">' +
-    '<button onclick="document.getElementById('fila-manual-'+i+'').remove()" style="background:var(--red-bg);color:var(--red);border:1px solid #FECACA;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px">✕</button>';
+    '<button onclick="this.parentElement.remove()" style="background:var(--red-bg);color:var(--red);border:1px solid #FECACA;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px">✕</button>';
   container.appendChild(div);
 }
 
