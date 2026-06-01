@@ -275,13 +275,31 @@ function renderMxNovTable(colabs, periodo) {
 
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  // Capturar manuales frescos del DOM en este momento
-  capturarManualesMX();
-  console.log('Exportando con otras novedades:', mxOtrasNovedades);
+  
+  // Leer otras novedades directamente del DOM de forma simple
+  const otrasNovedades = [];
+  const container = document.getElementById('manual-rows-mx');
+  if (container) {
+    const rows = container.children;
+    const tipos_otras = ['bono', 'vacaciones', 'ausencia', 'cambio_sueldo'];
+    for (let row of rows) {
+      const inputs = row.getElementsByTagName('input');
+      const selects = row.getElementsByTagName('select');
+      if (inputs.length < 1 || selects.length < 1) continue;
+      const nombre = inputs[0] ? inputs[0].value.trim() : '';
+      const tipo = selects[0] ? selects[0].value : '';
+      const valor = inputs[1] ? inputs[1].value.trim() : '';
+      const comentarios = inputs[2] ? inputs[2].value.trim() : '';
+      if (nombre && tipos_otras.includes(tipo)) {
+        otrasNovedades.push({ nombre, tipo, valor, comentarios });
+      }
+    }
+  }
+  
   const res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: mxOtrasNovedades })
+    body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otrasNovedades })
   });
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
