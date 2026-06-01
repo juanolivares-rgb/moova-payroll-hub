@@ -67,21 +67,130 @@
       <div class="table-wrap" id="mx-nov-table"></div>
     </div>
 
-    <!-- Otras novedades: formulario estático -->
+    <!-- Otras novedades: HTML estático puro -->
     <div id="otras-nov-section" style="display:none" class="card">
       <div class="card-title">✏️ Otras novedades <span style="font-size:11px;font-weight:400;color:var(--text3)">(bonos, vacaciones, ausencias)</span></div>
       <div class="card-sub">Se incluyen en hoja separada del Excel para el estudio</div>
       <table style="width:100%;border-collapse:collapse">
         <thead>
           <tr>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">Colaborador</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">Tipo</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">Monto / Días</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">Detalle</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Colaborador</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Tipo</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Monto / Días</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px;color:#94A3B8;font-weight:600;border-bottom:1px solid #E2E8F0">Detalle</th>
           </tr>
         </thead>
-        <tbody id="otras-tbody">
-          <!-- filas generadas por JS -->
+        <tbody>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_0" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_0" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_0" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_0" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_1" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_1" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_1" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_1" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_2" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_2" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_2" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_2" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_3" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_3" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_3" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_3" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_4" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_4" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_4" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_4" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_5" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_5" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_5" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_5" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_6" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_6" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_6" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_6" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_7" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_7" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_7" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_7" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_8" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_8" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_8" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_8" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px"><input type="text" id="on_n_9" placeholder="Nombre" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><select id="on_t_9" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit">
+            <option value="bono">Bono / Gratificación</option>
+            <option value="vacaciones">Vacaciones</option>
+            <option value="ausencia">Ausencia</option>
+            <option value="cambio_sueldo">Cambio de sueldo</option>
+          </select></td>
+          <td style="padding:4px 6px"><input type="text" id="on_v_9" placeholder="ej: 3000" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+          <td style="padding:4px 6px"><input type="text" id="on_d_9" placeholder="Descripción" style="width:100%;border:1px solid #CBD5E1;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit"></td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -497,8 +606,6 @@ async function exportMxCtrl() {
 }
 
 // Inicializar tabla al cargar
-window.addEventListener('DOMContentLoaded', function() {
-  initOtrasNovedades();
-});
+// inputs ya están en el HTML estático
 </script>
 {% endblock %}
