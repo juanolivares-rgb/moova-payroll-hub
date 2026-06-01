@@ -107,20 +107,28 @@ def parse_ar_liquidacion(file_obj):
 
     empMap = {}
     for r in ws[1:]:
-        leg_raw = r[CI['leg']]
+        try:
+            leg_raw = r[CI['leg']] if CI['leg'] is not None and CI['leg'] < len(r) else None
+        except (IndexError, TypeError):
+            continue
         if not leg_raw: continue
         try: leg = int(float(leg_raw))
         except: continue
+        def safe_get(row, col_idx):
+            if col_idx is None or col_idx >= len(row): return 0
+            try: return float(row[col_idx] or 0)
+            except: return 0
+
         empMap[leg] = {
-            'nombre': str(r[CI['nom']] or ''),
-            'sueldo': float(r[CI['sdo']] or 0) if CI['sdo'] is not None else 0,
-            'compDisp': float(r[CI['cd']] or 0) if CI['cd'] is not None else 0,
-            'totalRem': float(r[CI['tr']] or 0) if CI['tr'] is not None else 0,
-            'descLey': float(r[CI['dl']] or 0) if CI['dl'] is not None else 0,
-            'descAntic': float(r[CI['da']] or 0) if CI['da'] is not None else 0,
-            'descDifPlan': float(r[CI['ddp']] or 0) if CI['ddp'] is not None else 0,
-            'totalOtrDesc': float(r[CI['tod']] or 0) if CI['tod'] is not None else 0,
-            'neto': float(r[CI['net']] or 0) if CI['net'] is not None else 0,
+            'nombre': str(r[CI['nom']] or '') if CI['nom'] is not None and CI['nom'] < len(r) else '',
+            'sueldo': safe_get(r, CI['sdo']),
+            'compDisp': safe_get(r, CI['cd']),
+            'totalRem': safe_get(r, CI['tr']),
+            'descLey': safe_get(r, CI['dl']),
+            'descAntic': safe_get(r, CI['da']),
+            'descDifPlan': safe_get(r, CI['ddp']),
+            'totalOtrDesc': safe_get(r, CI['tod']),
+            'neto': safe_get(r, CI['net']),
         }
     return empMap
 
