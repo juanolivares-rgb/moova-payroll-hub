@@ -42,12 +42,51 @@
       </div>
     </div>
 
-    <!-- Novedades manuales MX -->
+    <!-- Otras novedades: formulario estático simple -->
     <div class="card" style="margin-bottom:20px">
-      <div class="card-title">✏️ Novedades manuales</div>
-      <div class="card-sub">Agregá colaboradores o conceptos que no vienen del sheet de OPS</div>
-      <div id="manual-rows-mx"></div>
-      <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="addManualRowMX()">+ Agregar novedad</button>
+      <div class="card-title">✏️ Otras novedades <span style="font-size:11px;font-weight:400;color:var(--text3)">(bonos, vacaciones, ausencias — van a hoja separada del Excel)</span></div>
+      <div class="card-sub">Completá los que apliquen para este período</div>
+      <div id="otras-nov-rows">
+        <div class="form-row" style="margin-bottom:6px">
+          <div class="form-group"><label>Colaborador</label><input type="text" id="on_n_0" placeholder="Nombre"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="on_t_0">
+              <option value="bono">Bono / Gratificación</option>
+              <option value="vacaciones">Vacaciones</option>
+              <option value="ausencia">Ausencia / Incidencia</option>
+              <option value="cambio_sueldo">Cambio de sueldo</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Monto / Días</label><input type="text" id="on_v_0" placeholder="ej: 3000"></div>
+          <div class="form-group"><label>Detalle</label><input type="text" id="on_d_0" placeholder="Descripción"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:6px">
+          <div class="form-group"><label>Colaborador</label><input type="text" id="on_n_1" placeholder="Nombre"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="on_t_1">
+              <option value="bono">Bono / Gratificación</option>
+              <option value="vacaciones">Vacaciones</option>
+              <option value="ausencia">Ausencia / Incidencia</option>
+              <option value="cambio_sueldo">Cambio de sueldo</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Monto / Días</label><input type="text" id="on_v_1" placeholder="ej: 6 días"></div>
+          <div class="form-group"><label>Detalle</label><input type="text" id="on_d_1" placeholder="Descripción"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:6px">
+          <div class="form-group"><label>Colaborador</label><input type="text" id="on_n_2" placeholder="Nombre"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="on_t_2">
+              <option value="bono">Bono / Gratificación</option>
+              <option value="vacaciones">Vacaciones</option>
+              <option value="ausencia">Ausencia / Incidencia</option>
+              <option value="cambio_sueldo">Cambio de sueldo</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Monto / Días</label><input type="text" id="on_v_2" placeholder="ej: 6 días"></div>
+          <div class="form-group"><label>Detalle</label><input type="text" id="on_d_2" placeholder="Descripción"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Stats novedades -->
@@ -275,39 +314,22 @@ function renderMxNovTable(colabs, periodo) {
 
 async function exportMxNov() {
   if (!mxNovData) { alert('Cargá el archivo de OPS primero'); return; }
-  
-  // Leer otras novedades directamente del DOM de forma simple
+
+  // Leer otras novedades por IDs fijos — simple y confiable
   const otrasNovedades = [];
-  const container = document.getElementById('manual-rows-mx');
-  if (container) {
-    const rows = container.children;
-    const tipos_otras = ['bono', 'vacaciones', 'ausencia', 'cambio_sueldo'];
-    for (let row of rows) {
-      const inputs = row.getElementsByTagName('input');
-      const selects = row.getElementsByTagName('select');
-      if (inputs.length < 1 || selects.length < 1) continue;
-      const nombre = inputs[0] ? inputs[0].value.trim() : '';
-      const tipo = selects[0] ? selects[0].value : '';
-      const valor = inputs[1] ? inputs[1].value.trim() : '';
-      const comentarios = inputs[2] ? inputs[2].value.trim() : '';
-      if (nombre && tipos_otras.includes(tipo)) {
-        otrasNovedades.push({ nombre, tipo, valor, comentarios });
-      }
-    }
+  for (let i = 0; i < 3; i++) {
+    const nombre = document.getElementById('on_n_' + i)?.value?.trim() || '';
+    const tipo   = document.getElementById('on_t_' + i)?.value || 'bono';
+    const valor  = document.getElementById('on_v_' + i)?.value?.trim() || '';
+    const detalle = document.getElementById('on_d_' + i)?.value?.trim() || '';
+    if (nombre) otrasNovedades.push({ nombre, tipo, valor, comentarios: detalle });
   }
-  
+
   const res = await fetch('/api/mx/export-novedades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ colabs: mxNovData, periodo: mxPeriodo, otras_novedades: otrasNovedades })
   });
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `MX-novedades-estudio-${(mxPeriodo||'PERIODO').replace(/\//g,'-').replace(/ /g,'-')}.xlsx`;
-  a.click();
-}
 
 // ── MANUALES MX ──
 function addManualRowMX() {
